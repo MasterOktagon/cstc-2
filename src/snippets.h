@@ -1,0 +1,108 @@
+#pragma once
+#define share(a) std::shared_ptr<a>
+#define unify(a) std::unique_ptr<a>
+
+#include <cstdint>
+#include <memory>
+
+#include "../lib/segvcatch/lib/segvcatch.h"
+typedef int8_t int8;
+typedef int16_t int16;
+typedef int32_t int32;
+typedef int64_t int64;
+
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
+
+typedef float float32;
+typedef double float64;
+typedef long double float80;
+
+typedef std::size_t size;
+
+#define sptr std::shared_ptr
+#define uptr std::unique_ptr
+#define Exception std::exception
+#define extends :
+
+#define abstract =0
+#define nlambda []
+#define lambda [&]
+
+typedef std::string String;
+typedef String LLType;
+typedef String CstType;
+//typedef char wchar;
+
+#include <string>
+
+extern String operator ""s (const char* a, size);
+
+class Repr{
+    friend String str(Repr*);
+
+    public:
+        Repr(){};
+        virtual ~Repr(){};
+
+    protected:
+        virtual String _str(){return "Repr"s;};
+};
+
+#include <sstream>
+template< typename T >
+String int_to_hex( T i ){
+  std::stringstream stream;
+  stream << "0x"
+         << std::hex << i;
+  return stream.str();
+}
+
+
+inline String str(Repr* r){
+    return r->_str();
+}
+inline String strp(Repr* r){
+    return str(r) + " @ "s + int_to_hex((size) r);
+}
+inline String str(int32 i) {
+    return std::to_string(i);
+}
+inline String str(int64 i) {
+    return std::to_string(i);
+}
+inline String str(uint32 i) {
+    return std::to_string(i);
+}
+inline String str(uint64 i) {
+    return std::to_string(i);
+}
+
+inline String str(float32 i) {
+    return std::to_string(i);
+}
+inline String str(float80 i) {
+    return std::to_string(i);
+}
+
+class FPEException extends public Exception {
+    public:
+    FPEException()= default;
+    const char* what() const noexcept {
+        //spdlog::critical("Zero Division Error!");
+        return "\e[31mFATAL:\e[0m Zero division Error";
+    }
+};
+
+class SegFException extends public Exception {
+    public:
+    SegFException()= default;
+    const char* what() const noexcept {
+        //spdlog::critical("Access denied! (Segmentation fault)");
+        return "\e[31mFATAL:\e[0m Access denied! (Segmentation fault)";
+    }
+};
+
+
