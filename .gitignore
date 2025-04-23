@@ -6,3 +6,4 @@ bin/
 !CMakeLists.txt
 compile_commands.json
 CMakeCache
+lib/
