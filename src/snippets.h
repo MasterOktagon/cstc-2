@@ -91,7 +91,7 @@ class FPEException : public Exception {
     FPEException()= default;
     const char* what() const noexcept {
         //spdlog::critical("Zero Division Error!");
-        return "\e[31mFATAL:\e[0m Zero division Error";
+        return "\e[1;31mFATAL:\e[0m Zero division Error";
     }
 };
 
@@ -100,7 +100,7 @@ class SegFException : public Exception {
     SegFException()= default;
     const char* what() const noexcept {
         //spdlog::critical("Access denied! (Segmentation fault)");
-        return "\e[31mFATAL:\e[0m Access denied! (Segmentation fault)";
+        return "\e[1;31mFATAL:\e[0m Access denied! (Segmentation fault)";
     }
 };
 
