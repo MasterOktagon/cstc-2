@@ -1,0 +1,7 @@
+CMakeFiles/
+CMake*
+.cache/
+.vscode/
+bin/
+!CMakeLists.txt
+compile_commands.json
