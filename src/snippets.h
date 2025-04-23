@@ -1,6 +1,6 @@
 #pragma once
-#define share(a) std::shared_ptr<a>
-#define unify(a) std::unique_ptr<a>
+#define share std::shared_ptr
+#define unify std::unique_ptr
 
 #include <cstdint>
 #include <memory>
@@ -25,7 +25,6 @@ typedef std::size_t size;
 #define sptr std::shared_ptr
 #define uptr std::unique_ptr
 #define Exception std::exception
-#define extends :
 
 #define abstract =0
 #define nlambda []
@@ -34,7 +33,7 @@ typedef std::size_t size;
 typedef std::string String;
 typedef String LLType;
 typedef String CstType;
-//typedef char wchar;
+typedef wchar_t wchar;
 
 #include <string>
 
@@ -87,7 +86,7 @@ inline String str(float80 i) {
     return std::to_string(i);
 }
 
-class FPEException extends public Exception {
+class FPEException : public Exception {
     public:
     FPEException()= default;
     const char* what() const noexcept {
@@ -96,7 +95,7 @@ class FPEException extends public Exception {
     }
 };
 
-class SegFException extends public Exception {
+class SegFException : public Exception {
     public:
     SegFException()= default;
     const char* what() const noexcept {

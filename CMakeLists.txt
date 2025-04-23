@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_compile_options(-W -Wall -Wextra -Wno-literal-suffix)
 
 file(GLOB_RECURSE SRC "src/*")
+include_directories("lib/segvcatch/lib/")
 
 add_executable (cstc ${SRC})
 # for later use
@@ -21,4 +22,7 @@ add_executable (cstc ${SRC})
 #target_link_libraries(cstc PRIVATE ${LLVM_LIBRARIES})
 #target_include_directories(cstc PRIVATE ${LLVM_INCLUDE_DIRS})
 #target_link_directories(cstc PRIVATE ${LLVM_LIBRARY_DIRS})
+
+target_link_libraries(cstc PRIVATE segvcatch)
+target_include_directories(cstc PRIVATE ${SEGVCATCH_INCLUDE_DIRS})
 
