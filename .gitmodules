@@ -1,3 +1,6 @@
 [submodule "lib/segvcatch"]
 	path = lib/segvcatch
 	url = https://github.com/Plaristote/segvcatch
+[submodule "lib/argparse"]
+	path = lib/argparse
+	url = https://github.com/p-ranav/argparse
