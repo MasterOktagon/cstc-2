@@ -1,9 +1,20 @@
+//
+// MAIN.cpp
+//
+// main porgram file
+//
+
+#include "module.hpp"
 #include "snippets.h"
 #include "../lib/argparse/include/argparse/argparse.hpp"
+#include <filesystem>
+#include <iostream>
+#include <ostream>
 
 // EXIT CODE NAMES
 #define PROGRAM_EXIT 0
 #define EXIT_ARG_FAILURE 1
+#define EXIT_NO_MAIN_FILE 2
 
 int32 main(int32 argc, const char** argv){
 /**
@@ -18,7 +29,12 @@ int32 main(int32 argc, const char** argv){
     argparser.add_argument("file")
         .help("main file of your program")
     ;
+    argparser.add_argument("-l", "--list-modules")
+        .help("list all loaded modules")
+        .flag()    
+    ;
 
+    // try to parse arguments
     try {
         argparser.parse_args(argc, argv);
     }
@@ -27,6 +43,36 @@ int32 main(int32 argc, const char** argv){
         std::cerr << argparser;
         return EXIT_ARG_FAILURE;
     }
+
+    // check for std environment variable
+    if (Module::stdLibLocation() == ""){
+        std::cerr << "\e[1;33mWARNING: \e[0m\e[1mCSTC_STD\e[0m environment variable could not be found.\n"
+                     "This may cause problems with std::* modules.\n" << std::endl;
+    }
+
+    // try to load the main file
+    String main_file = argparser.get("file");
+    if (!std::filesystem::exists(std::filesystem::u8path(main_file))){
+        std::cout << "\e[1;31mERROR:\e[0m main file at \e[1m"s + main_file + "\e[0m not found!" << std::endl;
+        return EXIT_NO_MAIN_FILE;
+    }
+    // Load the main module (which autoloads all necessary modules)
+    std::cout << "Fetching modules: (" << 0 << "/?)";
+    Module* main_module = Module::create(main_file, std::fs::current_path().string(), "", false, {}, true, true);
+
+    // sort modules for parsing
+    Module::modules.sort(Module::loadOrder);
+    std::cout << "\r\e[32mFetching modules: (" << Module::known_modules.size() << "/" << Module::known_modules.size() << ")\e[0m" << std::endl;
+
+    if(argparser["-l"] == true){
+        // display a list of Modules loaded
+        std::cout << "\e[36;1mINFO: Modules loaded\e[0m" << std::endl;
+        std::cout << "\t\e[36;1m[h]\e[0m - Header        \e[32;1m[m]\e[0m - Main file        \e[33;1m[s]\e[0m - STDlib        \e[31;1m[t]\e[0m - target depending        \e[1m[l]\e[0m - autoload" << std::endl << std::endl;
+        for (Module* m : Module::modules){
+            std::cout << "\t" << str(m) << std::endl;
+        }
+    }
+
 
     return PROGRAM_EXIT;
 }

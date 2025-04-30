@@ -31,13 +31,22 @@ typedef std::size_t size;
 #define lambda [&]
 
 typedef std::string String;
+typedef std::wstring WString;
 typedef String LLType;
 typedef String CstType;
 typedef wchar_t wchar;
 
 #include <string>
+#include <vector>
 
 extern String operator ""s (const char* a, size);
+
+extern String fillup(String s, uint64 len, char with=' ');
+template <typename T>
+std::vector<T> subvector(std::vector<T> v, int start, int, int stop){
+    auto s = v.begin() + start; auto end = v.begin() + stop;
+    return std::vector<T>(s, end);
+}
 
 class Repr{
     friend String str(Repr*);
