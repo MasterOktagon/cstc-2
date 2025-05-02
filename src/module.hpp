@@ -7,6 +7,7 @@
 //
 
 #include "lexer/token.hpp"
+#include "parser/symboltable.hpp"
 #include "snippets.h"
 #include <list>
 #include <vector>
@@ -17,7 +18,7 @@ namespace std {
     namespace fs = std::filesystem;
 }
 
-class Module final : public Repr {
+class Module final : public symbol::Namespace {
     /**
      * @class Module holds all information and contents of a Program module 
     */
@@ -43,6 +44,7 @@ class Module final : public Repr {
     bool isHeader();
     bool isKnown ();
     void preprocess();
+    void parse();
 
     Module(String path, String dir, String name, bool is_stdlib=false, bool is_main_file=false);
 

@@ -10,6 +10,7 @@
 #include "lexer/lexer.hpp"
 #include "lexer/token.hpp"
 #include "snippets.h"
+#include "parser/parser.hpp"
 #include <algorithm>
 #include <asm-generic/errno.h>
 #include <cstdlib>
@@ -51,7 +52,7 @@ bool Module::isKnown(){
 }
 
 Module* Module::create(String path, String, String overpath, bool is_stdlib, std::vector<lexer::Token> tokens, bool is_main_file, bool from_path){
-    String module_name;
+    String module_name = "<unknown>";
     if (!from_path){
         path = mod2Path(path);
     }
@@ -79,9 +80,9 @@ Module* Module::create(String path, String, String overpath, bool is_stdlib, std
         }
     }
 
-    //std::cout << directory << std::endl;
-    //std::cout << path << std::endl;
-    //std::cout << module_name << std::endl;
+    ////std::cout << directory << std::endl;
+    ////std::cout << path << std::endl;
+    ////std::cout << module_name << std::endl;
 
     if (known_modules.count(module_name) > 0){
         return known_modules[module_name];
@@ -101,6 +102,7 @@ Module* Module::create(String path, String, String overpath, bool is_stdlib, std
     }
     if (std::find(unknown_modules.begin(), unknown_modules.end(), module_name) == unknown_modules.end()){
         lexer::error("Module not found", subvector(tokens, 1,1,tokens.size()-1), "A module at "s + directory.string() + "/" + path + " was not found", 3434);
+        unknown_modules.push_back(module_name);
     }
 
     return nullptr;
@@ -109,13 +111,14 @@ Module* Module::create(String path, String, String overpath, bool is_stdlib, std
 Module::Module(String path, String dir, String module_name, bool is_stdlib, bool is_main_file){
     this->is_main_file = is_main_file;
     this->is_stdlib = is_stdlib;
+    this->module_name = module_name;
+    ////std::cout << "name: " <<  this->module_name << std::endl;
 
     directory = std::fs::u8path(dir);
-    this->module_name = module_name;
     cst_file = std::fs::u8path(dir + "/" + path + ".cst");
     hst_file = std::fs::u8path(dir + "/" + path + ".hst");
 
-    std::cout << "\rFetching modules: (" << known_modules.size()+1 << "/?)";
+    //std::cout << "\rFetching modules: (" << known_modules.size()+1 << "/?)";
 
     preprocess();
 }
@@ -151,7 +154,8 @@ String Module::_str(){
     return fillup("\e[1m"s + module_name + "\e[0m", 50) +
         (isHeader() ? "\e[36;1m[h]\e[0m"s : "   "s) +
         (is_main_file ? "\e[32;1m[m]\e[0m"s : "   "s) +
-        (is_stdlib ? "\e[33;1m[s]\e[0m"s : "   "s) + " @ " + (cst_file.string())
+        (is_stdlib ? "\e[33;1m[s]\e[0m"s : "   "s) +
+        (module_name == "std::lang" ? "\e[1m[l]\e[0m"s : "   "s) + " @ " + (cst_file.string())
     ;
 }
 
@@ -167,11 +171,12 @@ void Module::preprocess(){
         String content((std::istreambuf_iterator<char>(f) ),
                        (std::istreambuf_iterator<char>()));
 
-        tokens = lexer::tokenize(content, directory.string() + "/" + (cst_file).string());
-        //std::cout << module_name << ": " <<std::endl;
-        //for (lexer::Token t : tokens){
-        //    std::cout << str(&t) << std::endl;
-        //}
+        tokens = lexer::tokenize(content, cst_file);
+        //std::cout << "\r" << module_name << ": " <<std::endl;
+        //std::cout << tokens.size() << std::endl;
+        for (lexer::Token t : tokens){
+            //std::cout << str(&t) << std::endl;
+        }
 
         bool at_top = true;
         lexer::Token first;
@@ -182,23 +187,39 @@ void Module::preprocess(){
                 if (buffer.at(0).type == lexer::Token::Type::IMPORT){
                     lexer::Token::Type last = lexer::Token::Type::SUBNS;
                     String new_module_name;
+                    String as;
+                    uint64 i2 = 0;
                     for (lexer::Token a : buffer){
-                        if (a.type == lexer::Token::IMPORT) continue;
-                        if (last == lexer::Token::SUBNS && (a.type == lexer::Token::DOTDOT || a.type == lexer::Token::ID)){
+                        //std::cout << i2 << " " << new_module_name << std::endl;
+                        if (a.type == lexer::Token::IMPORT){
+                            i2++;
+                            continue;
+                        }
+                        else if (last == lexer::Token::SUBNS && (a.type == lexer::Token::DOTDOT || a.type == lexer::Token::ID)){
                             new_module_name += a.value;
                         }
                         else if (a.type == lexer::Token::SUBNS && (last == lexer::Token::DOTDOT || last == lexer::Token::ID)){
                             new_module_name += a.value;
                         }
-                        else if (a.type == lexer::Token::Type::END_CMD){
+                        else if ((last == lexer::Token::DOTDOT || last == lexer::Token::ID) && a.type == lexer::Token::Type::END_CMD){
                             break;
+                        }
+                        else if ((last == lexer::Token::DOTDOT || last == lexer::Token::ID) && a.type == lexer::Token::Type::AS){
+                            
+                            if (buffer.size() > i2+2 && buffer.at(i2+1).type == lexer::Token::Type::ID && buffer.at(i2+2).type == lexer::Token::Type::END_CMD){
+                                String as = buffer.at(i2+1).value;
+                                break;
+                            } else {
+                                goto disallowed;
+                            }
                         }
                         else {
                             goto disallowed; // Yay, goto
                         }
-                        last = a.type;
+                        last = a.type; i2++;
+                        //std::cout << module_name << std::endl;
                     }
-                    //std::cout << new_module_name << std::endl;
+                    ////std::cout << new_module_name << std::endl;
                     bool is_stdlib = false;
                     if (new_module_name.size() >= 5 && new_module_name.substr(0,5) == "std::"){
                         new_module_name = new_module_name.substr(5);
@@ -207,9 +228,11 @@ void Module::preprocess(){
                     Module* m = Module::create(new_module_name, directory.string(), cst_file, is_stdlib, buffer);
                     if (m != nullptr){
                         deps[m->module_name] = m;
+                        if (as != "") add(as, m);
+                        else contents[module_name] = {m};
                     }
 
-                    // TODO parse import-as and import-from
+                    // TODO parse import-from
 
                     if (!at_top && m != nullptr){
                         lexer::warn("Import not at top", buffer, "This import statement was not at the top of the module", 23);
@@ -218,12 +241,18 @@ void Module::preprocess(){
                 }
                 else {
                     at_top = false;
-                    first = buffer[0];
+                    first = buffer.at(0);
                 }
                 disallowed:
                 buffer = {};
             }
-        } 
-
+        }
+        //std::cout << "end " << module_name << std::endl;
     f.close();
 }
+
+void Module::parse(){
+    
+}
+
+

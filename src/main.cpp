@@ -5,6 +5,7 @@
 //
 
 #include "module.hpp"
+#include "parser/errors.hpp"
 #include "snippets.h"
 #include "../lib/argparse/include/argparse/argparse.hpp"
 #include <filesystem>
@@ -33,6 +34,10 @@ int32 main(int32 argc, const char** argv){
         .help("list all loaded modules")
         .flag()    
     ;
+    argparser.add_argument("-1", "--one-error")
+        .help("exit at first error")
+        .flag()    
+    ;
 
     // try to parse arguments
     try {
@@ -50,6 +55,8 @@ int32 main(int32 argc, const char** argv){
                      "This may cause problems with std::* modules.\n" << std::endl;
     }
 
+    parser::one_error = argparser["-1"] == true;
+
     // try to load the main file
     String main_file = argparser.get("file");
     if (!std::filesystem::exists(std::filesystem::u8path(main_file))){
@@ -58,21 +65,30 @@ int32 main(int32 argc, const char** argv){
     }
     // Load the main module (which autoloads all necessary modules)
     std::cout << "Fetching modules: (" << 0 << "/?)";
-    Module* main_module = Module::create(main_file, std::fs::current_path().string(), "", false, {}, true, true);
+    Module::create("lang", "", "", true);
+    Module::create(main_file, std::fs::current_path().string(), "", false, {}, true, true);
 
     // sort modules for parsing
     Module::modules.sort(Module::loadOrder);
-    std::cout << "\r\e[32mFetching modules: (" << Module::known_modules.size() << "/" << Module::known_modules.size() << ")\e[0m" << std::endl;
+    std::cout << "\r\e[32mFetching modules: (" << Module::known_modules.size() << "/" << Module::known_modules.size() + Module::unknown_modules.size() << ")\e[0m" << std::endl;
 
     if(argparser["-l"] == true){
         // display a list of Modules loaded
-        std::cout << "\e[36;1mINFO: Modules loaded\e[0m" << std::endl;
+        std::cout << "\e[36;1mINFO: " << Module::known_modules.size() << " Module" << (Module::known_modules.size() == 1 ? ""s : "s"s) << " loaded\e[0m" << std::endl;
         std::cout << "\t\e[36;1m[h]\e[0m - Header        \e[32;1m[m]\e[0m - Main file        \e[33;1m[s]\e[0m - STDlib        \e[31;1m[t]\e[0m - target depending        \e[1m[l]\e[0m - autoload" << std::endl << std::endl;
         for (Module* m : Module::modules){
             std::cout << "\t" << str(m) << std::endl;
         }
+        for (String m : Module::unknown_modules){
+            std::cout << "\t\e[31m" << fillup(m, 60) << "missing" << "\e[0m" << std::endl;
+        }
     }
 
+    std::cout << "Parsing modules (" << 0 << "/" << Module::modules.size() << ")";
+
+    for (Module* m : Module::modules){
+        m->parse();
+    }
 
     return PROGRAM_EXIT;
 }
