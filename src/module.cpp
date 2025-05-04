@@ -9,8 +9,10 @@
 #include "lexer/errors.hpp"
 #include "lexer/lexer.hpp"
 #include "lexer/token.hpp"
+#include "parser/ast/ast.hpp"
+#include "parser/ast/literal.hpp"
 #include "snippets.h"
-#include "parser/parser.hpp"
+//#include "parser/parser.hpp"
 #include <algorithm>
 #include <asm-generic/errno.h>
 #include <cstdlib>
@@ -20,7 +22,6 @@
 #include <map>
 #include "module.hpp"
 #include <iostream>
-#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -29,6 +30,8 @@ std::map<String, Module*> Module::known_modules = {};
 std::list<String> Module::unknown_modules = {};
 std::list<Module*> Module::modules = {};
 std::fs::path Module::directory;
+
+uint64 parsed_modules = 0;
 
 String Module::stdLibLocation(){
     if (const char* p = std::getenv("CSTC_STD"))
@@ -118,7 +121,7 @@ Module::Module(String path, String dir, String module_name, bool is_stdlib, bool
     cst_file = std::fs::u8path(dir + "/" + path + ".cst");
     hst_file = std::fs::u8path(dir + "/" + path + ".hst");
 
-    //std::cout << "\rFetching modules: (" << known_modules.size()+1 << "/?)";
+    std::cout << "\rFetching modules: (" << known_modules.size()+1 << "/?)";
 
     preprocess();
 }
@@ -189,6 +192,7 @@ void Module::preprocess(){
                     String new_module_name;
                     String as;
                     uint64 i2 = 0;
+                    bool importall = false;
                     for (lexer::Token a : buffer){
                         //std::cout << i2 << " " << new_module_name << std::endl;
                         if (a.type == lexer::Token::IMPORT){
@@ -213,6 +217,16 @@ void Module::preprocess(){
                                 goto disallowed;
                             }
                         }
+                        else if (last == lexer::Token::SUBNS && a.type == lexer::Token::Type::MUL){
+                            
+                            if (buffer.size() > i2+1 && buffer.at(i2+1).type == lexer::Token::Type::END_CMD && new_module_name != ""){
+                                importall = true;
+                                new_module_name = new_module_name.substr(0, new_module_name.size()-2);
+                                break;
+                            } else {
+                                goto disallowed;
+                            }
+                        }
                         else {
                             goto disallowed; // Yay, goto
                         }
@@ -228,7 +242,8 @@ void Module::preprocess(){
                     Module* m = Module::create(new_module_name, directory.string(), cst_file, is_stdlib, buffer);
                     if (m != nullptr){
                         deps[m->module_name] = m;
-                        if (as != "") add(as, m);
+                        if (importall) include.push_back(m);
+                        else if (as != "") add(as, m);
                         else contents[module_name] = {m};
                     }
 
@@ -252,7 +267,12 @@ void Module::preprocess(){
 }
 
 void Module::parse(){
-    
+    AST* root = FloatLiteralAST::parse(tokens, 0, this);
+    if (root != nullptr){
+        root->forceType("uint16");
+        std::cout << str(root) << std::endl;
+    }
+    std::cout << "\rParsing modules (" << ++parsed_modules << "/" << Module::modules.size() << ")";
 }
 
 
