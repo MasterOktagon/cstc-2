@@ -8,6 +8,7 @@
 #include "../snippets.h"
 #include "lexer.hpp"
 #include "token.hpp"
+#include <iostream>
 #include <string>
 #include <vector>
 #include <regex>
@@ -140,7 +141,7 @@ lexer::Token::Type lexer::matchType(String c){
 #define delimiter(a) a == ' ' || a == '\t' || a == '\n'
 #define handleBuffer() if (buffer.size() > 0){ \
     tokens.push_back(Token(matchType(buffer), buffer, line, col-buffer.size(), filename, lc));\
-    if (col > pretty_size && pretty_size != -1) too_long.push_back(tokens.at(tokens.size()-1));\
+    if (pretty_size != -1 && col > (uint64) pretty_size) too_long.push_back(tokens.at(tokens.size()-1));\
     buffer = "";\
 }
 #define updateVars() if (c == '\n'){ \
@@ -200,6 +201,17 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename){
             goto update;
         }
         if (ml_comment > 0){ goto update; }
+
+        if (c == '<' && text.size() >= i+12 && text.substr(i, 13) == "<<<<<<<< HEAD"){
+            *lc += "<<<<<<< HEAD";
+            lexer::error("Unresolved merge conflict", {Token (lexer::Token::Type::NONE, "<<<<<<<< HEAD", line, col, filename, lc)}, "There is an unresolved git merge conflict in this file.\nTry\n \e[36m$\e[0m git mergetool\nfor help", -3);
+            while (!std::regex_match(*lc, std::regex(">>>>>>> .*"))){
+                i++; col++; c = text[i];
+                if (i >= text.size()) return {};
+                updateVars();
+            }
+            while (i+1 < text.size() && text[i+1] != '\n') {i++; col++; c=text[i]; updateVars()}
+        }
 
         if (i < text.size()-1){
             t = getDoubleToken(""s + c + text[i+1]);
