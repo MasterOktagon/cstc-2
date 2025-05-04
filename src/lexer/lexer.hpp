@@ -12,6 +12,8 @@
 
 namespace lexer {
 
+    extern int32 pretty_size;
+
     extern std::vector<Token> tokenize(String text, String filename);
 
     extern Token::Type getSingleToken(char c);

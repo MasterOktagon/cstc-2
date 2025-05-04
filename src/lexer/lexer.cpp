@@ -8,10 +8,12 @@
 #include "../snippets.h"
 #include "lexer.hpp"
 #include "token.hpp"
+#include <string>
 #include <vector>
 #include <regex>
-#include <iostream>
 #include "errors.hpp"
+
+int32 lexer::pretty_size = 120;
 
 lexer::Token::Type lexer::getSingleToken(char c){
     /*
@@ -138,6 +140,7 @@ lexer::Token::Type lexer::matchType(String c){
 #define delimiter(a) a == ' ' || a == '\t' || a == '\n'
 #define handleBuffer() if (buffer.size() > 0){ \
     tokens.push_back(Token(matchType(buffer), buffer, line, col-buffer.size(), filename, lc));\
+    if (col > pretty_size && pretty_size != -1) too_long.push_back(tokens.at(tokens.size()-1));\
     buffer = "";\
 }
 #define updateVars() if (c == '\n'){ \
@@ -145,6 +148,11 @@ lexer::Token::Type lexer::matchType(String c){
             line++; \
             col = 0; \
             lc = share<String>(new String); \
+            if (too_long.size() > 0){\
+                warn("Line too long", {too_long},"It will become hard to read if you do long lines", 14);\
+                note(too_long, "current max length is "s + std::to_string(pretty_size) + ", you can adjust this with the --max-line-len argument", 0);\
+                too_long = {};\
+            }\
         }
 
 std::vector<lexer::Token> lexer::tokenize(String text, String filename){
@@ -155,6 +163,7 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename){
     uint64 ml_comment = 0;
     sptr<String> lc = share<String>(new String);
     Token ml_open;
+    std::vector<Token> too_long = {};
 
     String buffer = "";
     Token::Type t;

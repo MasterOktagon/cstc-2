@@ -4,6 +4,7 @@
 // main porgram file
 //
 
+#include "lexer/lexer.hpp"
 #include "module.hpp"
 #include "parser/errors.hpp"
 #include "snippets.h"
@@ -42,6 +43,11 @@ int32 main(int32 argc, const char** argv){
         .help("display version info and exit")
         .flag()    
     ;
+    argparser.add_argument("--max-line-len")
+        .help("maximum line length before LTL warning (-1 to disable)")
+        .scan<'d', int32>()
+        .default_value<int32>(100)
+    ;
 
     // try to parse arguments
     try {
@@ -66,6 +72,8 @@ int32 main(int32 argc, const char** argv){
     }
 
     parser::one_error = argparser["-1"] == true;
+    lexer::pretty_size = argparser.get<int32>("--max-line-len");
+    if (lexer::pretty_size < -1) lexer::pretty_size = -1;
 
     // try to load the main file
     String main_file = argparser.get("file");
