@@ -38,6 +38,10 @@ int32 main(int32 argc, const char** argv){
         .help("exit at first error")
         .flag()    
     ;
+    argparser.add_argument("--version")
+        .help("display version info and exit")
+        .flag()    
+    ;
 
     // try to parse arguments
     try {
@@ -53,6 +57,12 @@ int32 main(int32 argc, const char** argv){
     if (Module::stdLibLocation() == ""){
         std::cerr << "\e[1;33mWARNING: \e[0m\e[1mCSTC_STD\e[0m environment variable could not be found.\n"
                      "This may cause problems with std::* modules.\n" << std::endl;
+    }
+
+    if (argparser["--version"] == true){
+        std::cout << "CSTC v0.01 - cst25" << std::endl;
+
+        std::exit(0);
     }
 
     parser::one_error = argparser["-1"] == true;
@@ -83,12 +93,15 @@ int32 main(int32 argc, const char** argv){
             std::cout << "\t\e[31m" << fillup(m, 60) << "missing" << "\e[0m" << std::endl;
         }
     }
+    std::cout << std::endl;
 
     std::cout << "Parsing modules (" << 0 << "/" << Module::modules.size() << ")";
 
     for (Module* m : Module::modules){
         m->parse();
     }
+
+    std::cout << "\r\e[32mParsing modules (" << Module::modules.size() << "/" << Module::modules.size() << ")\e[0m" << std::endl;
 
     return PROGRAM_EXIT;
 }
