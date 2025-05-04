@@ -11,6 +11,7 @@
 #include <vector>
 #include <regex>
 #include <iostream>
+#include "errors.hpp"
 
 lexer::Token::Type lexer::getSingleToken(char c){
     /*
@@ -153,6 +154,7 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename){
     bool line_comment = false;
     uint64 ml_comment = 0;
     sptr<String> lc = share<String>(new String);
+    Token ml_open;
 
     String buffer = "";
     Token::Type t;
@@ -174,10 +176,16 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename){
         if (c == '/' && i < text.size()-1 && text[i+1] == '*'){
             handleBuffer();
             ml_comment++;
+            if (ml_comment == 1){
+                ml_open = Token(Token::Type::NONE, "/*", line, col, filename, lc);
+            }
             goto update;
         }
         if (c == '*' && i < text.size()-1 && text[i+1] == '/'){
-            // TODO: error
+            *lc += '/';
+            if (ml_comment == 0){
+                lexer::error("Unopened multiline comment", {Token(Token::Type::NONE, "*/", line, col, filename, lc)}, "This multiline comment was never opened", 2350);
+            }
             ml_comment -= ml_comment > 0 ? 1 : 0;
             i++; col++;
             goto update;
@@ -211,7 +219,12 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename){
         update:
         updateVars();
     }
+    if (ml_comment > 0){
+        lexer::warn("Unclosed multiline comment", {ml_open}, "This multiline comment was never closed. This could cause problems with commented code", 0);
+    }
+    for (Token t : tokens){
 
+    }
 
     return tokens;
 }
