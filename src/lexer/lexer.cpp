@@ -243,8 +243,8 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename){
     if (ml_comment > 0){
         lexer::warn("Unclosed multiline comment", {ml_open}, "This multiline comment was never closed. This could cause problems with commented code", 0);
     }
-    for (Token t : tokens){
-
+    if (tokens.size() == 0){
+        std::cerr << "\r\e[1;33mWARNING:\e[0m\e[1m " << filename << "\e[0m appears to be empty.\n";
     }
 
     return tokens;

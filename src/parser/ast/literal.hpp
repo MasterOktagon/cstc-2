@@ -17,13 +17,19 @@ class LiteralAST : public AST {
     public:
     virtual ~LiteralAST(){}
     virtual String getValue(){return "";}
-    bool is_const () {return true;}
+    bool isConst () {return true;}
+    virtual uint64 nodeSize(){return 1;}
 };
 
 class IntLiteralAST : public LiteralAST {
 
     int bits = 32;           // Integer Bit size
     bool tsigned = true;
+
+    protected:
+    String _str(){
+        return "<Int: "s + value + " | " + std::to_string(bits) + ">";
+    }
 
     public:
 
@@ -33,7 +39,6 @@ class IntLiteralAST : public LiteralAST {
     String getCstType(){return (tsigned ? "int"s : "uint"s) + std::to_string(bits);}
     String getLLType(){return "i"s + std::to_string(bits);}
     String getValue(){return value;}
-    virtual int nodeSize(){return 1;} // how many nodes to to do
     virtual String emit_ll(int*, String);
     /*
         Emit llvm IR code in human-readable form
@@ -58,6 +63,11 @@ class BoolLiteralAST : public LiteralAST {
 
     bool value = false; // boolean value
 
+    protected:
+    String _str(){
+        return "<Bool: "s + (value ? "true"s : "false"s) + ">";
+    }
+
     public:
 
     BoolLiteralAST(bool value, std::vector<lexer::Token> tokens);
@@ -65,7 +75,6 @@ class BoolLiteralAST : public LiteralAST {
     String getCstType(){return "bool";}
     String getLLType(){return "i1";}
     String getValue(){return std::to_string(value);}
-    virtual int nodeSize(){return 1;} // how many nodes to to do
     virtual String emit_ll(int*, String);
     /*
         Emit llvm IR code in human-readable form
@@ -87,6 +96,11 @@ class FloatLiteralAST : public LiteralAST {
     String value = "0";    // Float value
     int bits = 32; // Float size (name)
 
+    protected:
+    String _str(){
+        return "<Float: "s + value + " | " + std::to_string(bits) + ">";
+    }
+
     public:
 
     FloatLiteralAST(int bits, String value, std::vector<lexer::Token> tokens={});
@@ -94,8 +108,6 @@ class FloatLiteralAST : public LiteralAST {
     String getCstType(){return "float"s + std::to_string(bits);}
     String getLLType();
     String getValue(){return value;}
-
-    virtual int nodeSize(){return 1;} // how many nodes to to do
     virtual String emit_ll(int*, String);
     /*
         Emit llvm IR code in human-readable form
@@ -116,6 +128,11 @@ class CharLiteralAST : public LiteralAST {
 
     String value = "a";    // Float value
 
+    protected:
+    String _str(){
+        return "<Char: '"s + value + "'>";
+    }
+
     public:
 
     CharLiteralAST(String value, std::vector<lexer::Token> tokens);
@@ -124,7 +141,6 @@ class CharLiteralAST : public LiteralAST {
     String getLLType(){return "i16";};
     String getValue();
 
-    virtual int nodeSize(){return 1;} // how many nodes to to do
     virtual String emit_ll(int*, String);
     /*
         Emit llvm IR code in human-readable form
@@ -145,6 +161,11 @@ class StringLiteralAST : public LiteralAST {
 
     String value = "";
 
+    protected:
+    String _str(){
+        return "<String: \""s + value + "\">";
+    }
+
     public:
 
     StringLiteralAST(String value, std::vector<lexer::Token> tokens);
@@ -153,7 +174,6 @@ class StringLiteralAST : public LiteralAST {
     String getLLType(){return "%class.String";};
     String getValue();
 
-    virtual int nodeSize(){return 1;} // how many nodes to to do
     virtual String emit_ll(int*, String); // TODO: think of a possible struct for string
     /*
         Emit llvm IR code in human-readable form

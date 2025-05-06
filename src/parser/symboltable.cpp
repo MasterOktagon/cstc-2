@@ -4,6 +4,7 @@
 #include <vector>
 //#include "../debug.hpp"
 #include "../snippets.h"
+#include <iostream>
 
 void symbol::Namespace::add(String loc, symbol::Reference* sr){
     size pos = loc.find("::");
@@ -25,7 +26,7 @@ CstType symbol::Function::getCstType() {
     if (parameters.size() > 0) {
         s += "<-";
         for (CstType t : parameters) {
-            s += t + ", ";
+            s += t + ",";
         }
         if (s.at(s.size()-1) == ',')
             s = s.substr(0, s.size()-1);
@@ -44,15 +45,28 @@ symbol::Namespace::~Namespace() {
 
 std::vector<symbol::Reference*> symbol::Namespace::operator[] (String subloc){
     if (subloc == "") return {this};
+    if (contents.count(subloc) > 0) return contents[subloc];
+
+    std::vector<Reference*> result;
+
     size pos = subloc.find("::");
     if (pos != String::npos){
         String head = subloc.substr(0,pos);
         String tail = subloc.substr(pos+2, subloc.size()-pos-2);
-        if (contents.count(head) == 0) return {};
-        if ((Namespace*) contents[head][0] != dynamic_cast<Namespace*>(contents[head][0])) return {};
-        return (*((Namespace*) contents[head][0]))[tail];
+        if (contents.count(head) == 0){
+            result = {};
+        }
+        else if ((Namespace*) contents[head][0] != dynamic_cast<Namespace*>(contents[head][0])){
+            result = {};
+        }
+        else {
+            result = (*((Namespace*) contents[head][0]))[tail];
+        }
     }
-    if (contents.count(subloc) == 0) return {};
-    return contents[subloc];
+
+    for (uint64 i=0; result.size() == 0 && i < include.size(); i++){
+        result = (*include.at(i))[subloc];
+    }
+    return result;
 }
 

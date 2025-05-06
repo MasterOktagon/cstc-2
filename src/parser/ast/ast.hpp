@@ -20,9 +20,6 @@ class AST : public Repr {
          * @brief debug represenstation
         */
         String _str();
-        
-
-    private:
         std::vector<lexer::Token> tokens;
 
     public:
@@ -40,6 +37,11 @@ class AST : public Repr {
         virtual bool isConst();
         virtual String emit_ll(int*, String);
         virtual String emit_cst();
+        virtual uint64 nodeSize(){return 0;};
 };
+
+extern std::string intab(std::string);
+extern std::string insert(std::string val, std::string target);
+extern std::string rinsert(std::string val, std::string target);
 
 

@@ -1,21 +1,18 @@
 #pragma once
 
-#include <string>
 #include <utility>
 #include <vector>
 #include <map>
 #include "../snippets.h"
-#include "../lexer/lexer.hpp"
+#include "../lexer/token.hpp"
 
 template<typename T, typename S>
 using MultiMap = std::map<T, std::vector<S>>;
 
 namespace symbol {
-
+    class Namespace;
     class Reference : public Repr {
     
-        Reference* parent = nullptr;
-
         protected:
         String loc;
         virtual String _str(){
@@ -24,6 +21,7 @@ namespace symbol {
 
         public:
         std::vector<lexer::Token> tokens = {};
+        Reference* parent = nullptr;
 
         virtual ~Reference();
         virtual LLType getLLType(){return "void"s;}
@@ -33,9 +31,10 @@ namespace symbol {
             return parent->getLoc() + "::"s + loc;
         }
         virtual String getLLLoc() const {
-            if (parent == nullptr) return ""s;
-            return parent->getLoc() + ".."s;
+            if (parent == nullptr) return loc;
+            return parent->getLLLoc() + ".."s + loc;
         }
+        virtual String getRawLoc(){return loc;}
 
         virtual void add(String loc, Reference* sr) abstract;
         virtual size sizeBytes(){return 0;}
@@ -52,13 +51,16 @@ namespace symbol {
         public:
         bool isConst = false;
         bool isFinal = false;
-        Variable(const String& name, LLType type, std::vector<lexer::Token> tokens) : type(std::move(type)), name(name)
-            {loc = name; this->tokens = std::move(tokens);}
+        bool used = false;
+        Variable(String name, LLType type, std::vector<lexer::Token> tokens, symbol::Reference* parent) : type(std::move(type)), name(name)
+            {loc = name; this->tokens = std::move(tokens); this->parent=parent;}
         virtual ~Variable(){};
         virtual String _str() {
             return "symbol::Variable "s + getLoc();
         }
         virtual LLType getLLType(){return "void"s;}
+        virtual void add(String, Reference*){}
+        virtual CstType getCstType(){return type;}
     };
 
     class Function : public Reference {
@@ -68,15 +70,15 @@ namespace symbol {
 
         String name;
         CstType type;
-        std::vector<CstType> parameters;
-        std::vector<CstType> name_parameters;
-        bool is_method = false;
 
         protected:
         virtual String _str() {
             return "symbol::Function "s + getLoc();
         }
         public:
+        std::vector<CstType> parameters;
+        std::vector<CstType> name_parameters;
+        bool is_method = false;
         LLType getLLType(){return "void"s;}
         String getLLName(){return getLLType() + (is_method ? "mthd."s : "fn."s) + name;}
         CstType getCstType();
@@ -91,13 +93,16 @@ namespace symbol {
         */
 
         protected:
-        MultiMap<String, Reference*> contents = {};
+        std::vector<Namespace*> include {};
+
         virtual String _str(){
             return "symbol::Namespace "s + getLoc();
         }
         public:
+        MultiMap<String, Reference*> contents = {};
         virtual void add(String loc, Reference* sr);
         Namespace() = default;
+        Namespace(String loc){this->loc = loc;};
         virtual ~Namespace();
 
         bool ALLOWS_VAR_DECL     = false;
@@ -114,7 +119,7 @@ namespace symbol {
         // whether to allow function definitions
         bool ALLOWS_SUBBLOCKS   = false;
         // whether to allow subblocks
-        bool ALLOWS_SUBCLASSES  = false;
+        bool ALLOWS_SUBCLASSES  = true ;
         bool ALLOWS_INIT        = false;
         bool ALLOWS_INIT_CONST  = false;
         bool ALLOWS_CONST       = false;

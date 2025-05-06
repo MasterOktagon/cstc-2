@@ -16,7 +16,7 @@
 // EXIT CODE NAMES
 #define PROGRAM_EXIT 0
 #define EXIT_ARG_FAILURE 1
-#define EXIT_NO_MAIN_FILE 2
+#define EXIT_NO_MAIN_FILE 3
 
 int32 main(int32 argc, const char** argv){
 /**
@@ -37,6 +37,10 @@ int32 main(int32 argc, const char** argv){
     ;
     argparser.add_argument("-1", "--one-error")
         .help("exit at first error")
+        .flag()    
+    ;
+    argparser.add_argument("-p", "--punish")
+        .help("treat warnings as errors")
         .flag()    
     ;
     argparser.add_argument("--version")
@@ -110,6 +114,24 @@ int32 main(int32 argc, const char** argv){
     }
 
     std::cout << "\r\e[32mParsing modules (" << Module::modules.size() << "/" << Module::modules.size() << ")\e[0m" << std::endl;
+
+    if (parser::errc > 0 || parser::warnc > 0){
+        std::cout << "\n";
+        std::cout << parser::errc << " error" << (parser::errc == 1 ? ", " : "s, ") << parser::warnc << " warning" << (parser::warnc == 1 ? "" : "s") << " generated\n";
+        if (parser::warnc > 0 && argparser["-p"] == true){
+            std::cout << "Treating warnings as errors (--punish)\n\e[1;31mCompilation aborted\e[0m\n";
+            std::exit(2);
+        }
+        else if(parser::errc > 0){
+            std::cout << "\e[1;31mCompilation aborted\e[0m\n";
+            std::exit(2);
+        }
+        goto compile;
+    }
+    else{
+        compile:
+        std::cout << "Complete!" << std::endl;
+    }
 
     return PROGRAM_EXIT;
 }

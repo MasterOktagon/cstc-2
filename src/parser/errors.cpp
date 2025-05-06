@@ -28,7 +28,8 @@ void parser::showError(String errstr, String errcol, String errcol_lite, String 
     }
 
     std::cerr << "\r" << errcol << errstr << ": " << name << "\e[0m @ \e[0m" << tokens[0].filename << "\e[1m" << location << "\e[0m" << (code == 0? ""s : " ["s + errstr[0] + std::to_string(code) + "]") << ":" << std::endl;
-    std::cerr << msg << std::endl << std::endl;
+    std::cerr << msg << std::endl;
+    std::cerr << "      | " << std::endl;
     if (tokens.size() == 1){
         std::cerr << " " << fillup(std::to_string(tokens[0].l), 4) << " | " << *(tokens[0].line_contents) << std::endl;
         std::cerr << "      | " << errcol_lite << fillup("", tokens[0].c-1) << fillup("", tokens[0].value.size(), '^') << "\e[0m" << std::endl;

@@ -10,7 +10,9 @@
 #include "lexer/lexer.hpp"
 #include "lexer/token.hpp"
 #include "parser/ast/ast.hpp"
+#include "parser/ast/flow.hpp"
 #include "parser/ast/literal.hpp"
+#include "parser/symboltable.hpp"
 #include "snippets.h"
 //#include "parser/parser.hpp"
 #include <algorithm>
@@ -112,6 +114,17 @@ Module* Module::create(String path, String, String overpath, bool is_stdlib, std
 }
 
 Module::Module(String path, String dir, String module_name, bool is_stdlib, bool is_main_file){
+    loc = "";
+    for (uint64 i = 0; i<module_name.size(); i++){
+        if (i < module_name.size()-2 && module_name[i] == ':' && module_name[i+1] == ':'){
+            loc += "..";
+            i++;
+        }
+        else {
+            loc += module_name[i];
+        }
+    }
+
     this->is_main_file = is_main_file;
     this->is_stdlib = is_stdlib;
     this->module_name = module_name;
@@ -122,6 +135,9 @@ Module::Module(String path, String dir, String module_name, bool is_stdlib, bool
     hst_file = std::fs::u8path(dir + "/" + path + ".hst");
 
     std::cout << "\rFetching modules: (" << known_modules.size()+1 << "/?)";
+    if (module_name != "std::lang" && known_modules.count("std::lang") > 0){
+        include.push_back(known_modules["std::lang"]);
+    }
 
     preprocess();
 }
@@ -142,7 +158,7 @@ String Module::mod2Path(String mod){
     String out;
 
     for (uint64 i = 0; i<mod.size(); i++){
-        if (i < mod.size()-1 && mod[i] == ':' && mod[i+1] == ':'){
+        if (i < mod.size()-2 && mod[i] == ':' && mod[i+1] == ':'){
             out += '/';
             i++;
         }
@@ -162,11 +178,14 @@ String Module::_str(){
     ;
 }
 
-Module* Module::loadOrder(Module *a, Module *b){
+bool Module::loadOrder(Module *a, Module *b){
     for (std::pair<String, Module*> p : a->deps){
-        if (p.first == b->module_name) return a;
+        if (p.second == b) return false;
     }
-    return b;
+    for (symbol::Namespace* m : a->include){
+        if (m == b) return false;
+    }
+    return true;
 }
 
 void Module::preprocess(){
@@ -177,9 +196,9 @@ void Module::preprocess(){
         tokens = lexer::tokenize(content, cst_file);
         //std::cout << "\r" << module_name << ": " <<std::endl;
         //std::cout << tokens.size() << std::endl;
-        for (lexer::Token t : tokens){
-            //std::cout << str(&t) << std::endl;
-        }
+        //for (lexer::Token t : tokens){
+        //    //std::cout << str(&t) << std::endl;
+        //}
 
         bool at_top = true;
         lexer::Token first;
@@ -267,10 +286,14 @@ void Module::preprocess(){
 }
 
 void Module::parse(){
-    AST* root = FloatLiteralAST::parse(tokens, 0, this);
+    AST* root = SubBlockAST::parse(tokens, 0, this);
     if (root != nullptr){
-        root->forceType("uint16");
-        std::cout << str(root) << std::endl;
+        int* i = new int; *i = 0;
+        std::cout << root->emit_ll(i,"") << std::endl;
+    }
+    // check variables for usage
+    for (std::pair<String, std::vector<symbol::Reference*>> sr : contents){
+    
     }
     std::cout << "\rParsing modules (" << ++parsed_modules << "/" << Module::modules.size() << ")";
 }

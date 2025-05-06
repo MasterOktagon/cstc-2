@@ -55,7 +55,7 @@ class Module final : public symbol::Namespace {
     static String stdLibLocation();
     static String path2Mod(String path);
     static String mod2Path(String path);
-    static Module* loadOrder(Module* a, Module* b);
+    static bool loadOrder(Module* a, Module* b);
     /**
      * @brief compare two modules about their load order
     */

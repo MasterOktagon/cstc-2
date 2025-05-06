@@ -129,6 +129,78 @@ cstc/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/build
 .PHONY : cstc/fast
 
+src/lexer/errors.o: src/lexer/errors.cpp.o
+.PHONY : src/lexer/errors.o
+
+# target to build an object file
+src/lexer/errors.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/errors.cpp.o
+.PHONY : src/lexer/errors.cpp.o
+
+src/lexer/errors.i: src/lexer/errors.cpp.i
+.PHONY : src/lexer/errors.i
+
+# target to preprocess a source file
+src/lexer/errors.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/errors.cpp.i
+.PHONY : src/lexer/errors.cpp.i
+
+src/lexer/errors.s: src/lexer/errors.cpp.s
+.PHONY : src/lexer/errors.s
+
+# target to generate assembly for a file
+src/lexer/errors.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/errors.cpp.s
+.PHONY : src/lexer/errors.cpp.s
+
+src/lexer/lexer.o: src/lexer/lexer.cpp.o
+.PHONY : src/lexer/lexer.o
+
+# target to build an object file
+src/lexer/lexer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/lexer.cpp.o
+.PHONY : src/lexer/lexer.cpp.o
+
+src/lexer/lexer.i: src/lexer/lexer.cpp.i
+.PHONY : src/lexer/lexer.i
+
+# target to preprocess a source file
+src/lexer/lexer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/lexer.cpp.i
+.PHONY : src/lexer/lexer.cpp.i
+
+src/lexer/lexer.s: src/lexer/lexer.cpp.s
+.PHONY : src/lexer/lexer.s
+
+# target to generate assembly for a file
+src/lexer/lexer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/lexer.cpp.s
+.PHONY : src/lexer/lexer.cpp.s
+
+src/lexer/token.o: src/lexer/token.cpp.o
+.PHONY : src/lexer/token.o
+
+# target to build an object file
+src/lexer/token.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/token.cpp.o
+.PHONY : src/lexer/token.cpp.o
+
+src/lexer/token.i: src/lexer/token.cpp.i
+.PHONY : src/lexer/token.i
+
+# target to preprocess a source file
+src/lexer/token.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/token.cpp.i
+.PHONY : src/lexer/token.cpp.i
+
+src/lexer/token.s: src/lexer/token.cpp.s
+.PHONY : src/lexer/token.s
+
+# target to generate assembly for a file
+src/lexer/token.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/lexer/token.cpp.s
+.PHONY : src/lexer/token.cpp.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -152,6 +224,318 @@ src/main.s: src/main.cpp.s
 src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
+
+src/module.o: src/module.cpp.o
+.PHONY : src/module.o
+
+# target to build an object file
+src/module.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/module.cpp.o
+.PHONY : src/module.cpp.o
+
+src/module.i: src/module.cpp.i
+.PHONY : src/module.i
+
+# target to preprocess a source file
+src/module.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/module.cpp.i
+.PHONY : src/module.cpp.i
+
+src/module.s: src/module.cpp.s
+.PHONY : src/module.s
+
+# target to generate assembly for a file
+src/module.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/module.cpp.s
+.PHONY : src/module.cpp.s
+
+src/parser/ast/ast.o: src/parser/ast/ast.cpp.o
+.PHONY : src/parser/ast/ast.o
+
+# target to build an object file
+src/parser/ast/ast.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/ast.cpp.o
+.PHONY : src/parser/ast/ast.cpp.o
+
+src/parser/ast/ast.i: src/parser/ast/ast.cpp.i
+.PHONY : src/parser/ast/ast.i
+
+# target to preprocess a source file
+src/parser/ast/ast.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/ast.cpp.i
+.PHONY : src/parser/ast/ast.cpp.i
+
+src/parser/ast/ast.s: src/parser/ast/ast.cpp.s
+.PHONY : src/parser/ast/ast.s
+
+# target to generate assembly for a file
+src/parser/ast/ast.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/ast.cpp.s
+.PHONY : src/parser/ast/ast.cpp.s
+
+src/parser/ast/base_math.o: src/parser/ast/base_math.cpp.o
+.PHONY : src/parser/ast/base_math.o
+
+# target to build an object file
+src/parser/ast/base_math.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/base_math.cpp.o
+.PHONY : src/parser/ast/base_math.cpp.o
+
+src/parser/ast/base_math.i: src/parser/ast/base_math.cpp.i
+.PHONY : src/parser/ast/base_math.i
+
+# target to preprocess a source file
+src/parser/ast/base_math.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/base_math.cpp.i
+.PHONY : src/parser/ast/base_math.cpp.i
+
+src/parser/ast/base_math.s: src/parser/ast/base_math.cpp.s
+.PHONY : src/parser/ast/base_math.s
+
+# target to generate assembly for a file
+src/parser/ast/base_math.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/base_math.cpp.s
+.PHONY : src/parser/ast/base_math.cpp.s
+
+src/parser/ast/flow.o: src/parser/ast/flow.cpp.o
+.PHONY : src/parser/ast/flow.o
+
+# target to build an object file
+src/parser/ast/flow.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/flow.cpp.o
+.PHONY : src/parser/ast/flow.cpp.o
+
+src/parser/ast/flow.i: src/parser/ast/flow.cpp.i
+.PHONY : src/parser/ast/flow.i
+
+# target to preprocess a source file
+src/parser/ast/flow.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/flow.cpp.i
+.PHONY : src/parser/ast/flow.cpp.i
+
+src/parser/ast/flow.s: src/parser/ast/flow.cpp.s
+.PHONY : src/parser/ast/flow.s
+
+# target to generate assembly for a file
+src/parser/ast/flow.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/flow.cpp.s
+.PHONY : src/parser/ast/flow.cpp.s
+
+src/parser/ast/func.o: src/parser/ast/func.cpp.o
+.PHONY : src/parser/ast/func.o
+
+# target to build an object file
+src/parser/ast/func.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/func.cpp.o
+.PHONY : src/parser/ast/func.cpp.o
+
+src/parser/ast/func.i: src/parser/ast/func.cpp.i
+.PHONY : src/parser/ast/func.i
+
+# target to preprocess a source file
+src/parser/ast/func.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/func.cpp.i
+.PHONY : src/parser/ast/func.cpp.i
+
+src/parser/ast/func.s: src/parser/ast/func.cpp.s
+.PHONY : src/parser/ast/func.s
+
+# target to generate assembly for a file
+src/parser/ast/func.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/func.cpp.s
+.PHONY : src/parser/ast/func.cpp.s
+
+src/parser/ast/literal.o: src/parser/ast/literal.cpp.o
+.PHONY : src/parser/ast/literal.o
+
+# target to build an object file
+src/parser/ast/literal.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/literal.cpp.o
+.PHONY : src/parser/ast/literal.cpp.o
+
+src/parser/ast/literal.i: src/parser/ast/literal.cpp.i
+.PHONY : src/parser/ast/literal.i
+
+# target to preprocess a source file
+src/parser/ast/literal.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/literal.cpp.i
+.PHONY : src/parser/ast/literal.cpp.i
+
+src/parser/ast/literal.s: src/parser/ast/literal.cpp.s
+.PHONY : src/parser/ast/literal.s
+
+# target to generate assembly for a file
+src/parser/ast/literal.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/literal.cpp.s
+.PHONY : src/parser/ast/literal.cpp.s
+
+src/parser/ast/namespace.o: src/parser/ast/namespace.cpp.o
+.PHONY : src/parser/ast/namespace.o
+
+# target to build an object file
+src/parser/ast/namespace.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/namespace.cpp.o
+.PHONY : src/parser/ast/namespace.cpp.o
+
+src/parser/ast/namespace.i: src/parser/ast/namespace.cpp.i
+.PHONY : src/parser/ast/namespace.i
+
+# target to preprocess a source file
+src/parser/ast/namespace.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/namespace.cpp.i
+.PHONY : src/parser/ast/namespace.cpp.i
+
+src/parser/ast/namespace.s: src/parser/ast/namespace.cpp.s
+.PHONY : src/parser/ast/namespace.s
+
+# target to generate assembly for a file
+src/parser/ast/namespace.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/namespace.cpp.s
+.PHONY : src/parser/ast/namespace.cpp.s
+
+src/parser/ast/struct.o: src/parser/ast/struct.cpp.o
+.PHONY : src/parser/ast/struct.o
+
+# target to build an object file
+src/parser/ast/struct.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/struct.cpp.o
+.PHONY : src/parser/ast/struct.cpp.o
+
+src/parser/ast/struct.i: src/parser/ast/struct.cpp.i
+.PHONY : src/parser/ast/struct.i
+
+# target to preprocess a source file
+src/parser/ast/struct.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/struct.cpp.i
+.PHONY : src/parser/ast/struct.cpp.i
+
+src/parser/ast/struct.s: src/parser/ast/struct.cpp.s
+.PHONY : src/parser/ast/struct.s
+
+# target to generate assembly for a file
+src/parser/ast/struct.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/struct.cpp.s
+.PHONY : src/parser/ast/struct.cpp.s
+
+src/parser/ast/type.o: src/parser/ast/type.cpp.o
+.PHONY : src/parser/ast/type.o
+
+# target to build an object file
+src/parser/ast/type.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/type.cpp.o
+.PHONY : src/parser/ast/type.cpp.o
+
+src/parser/ast/type.i: src/parser/ast/type.cpp.i
+.PHONY : src/parser/ast/type.i
+
+# target to preprocess a source file
+src/parser/ast/type.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/type.cpp.i
+.PHONY : src/parser/ast/type.cpp.i
+
+src/parser/ast/type.s: src/parser/ast/type.cpp.s
+.PHONY : src/parser/ast/type.s
+
+# target to generate assembly for a file
+src/parser/ast/type.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/type.cpp.s
+.PHONY : src/parser/ast/type.cpp.s
+
+src/parser/ast/var.o: src/parser/ast/var.cpp.o
+.PHONY : src/parser/ast/var.o
+
+# target to build an object file
+src/parser/ast/var.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/var.cpp.o
+.PHONY : src/parser/ast/var.cpp.o
+
+src/parser/ast/var.i: src/parser/ast/var.cpp.i
+.PHONY : src/parser/ast/var.i
+
+# target to preprocess a source file
+src/parser/ast/var.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/var.cpp.i
+.PHONY : src/parser/ast/var.cpp.i
+
+src/parser/ast/var.s: src/parser/ast/var.cpp.s
+.PHONY : src/parser/ast/var.s
+
+# target to generate assembly for a file
+src/parser/ast/var.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/ast/var.cpp.s
+.PHONY : src/parser/ast/var.cpp.s
+
+src/parser/errors.o: src/parser/errors.cpp.o
+.PHONY : src/parser/errors.o
+
+# target to build an object file
+src/parser/errors.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/errors.cpp.o
+.PHONY : src/parser/errors.cpp.o
+
+src/parser/errors.i: src/parser/errors.cpp.i
+.PHONY : src/parser/errors.i
+
+# target to preprocess a source file
+src/parser/errors.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/errors.cpp.i
+.PHONY : src/parser/errors.cpp.i
+
+src/parser/errors.s: src/parser/errors.cpp.s
+.PHONY : src/parser/errors.s
+
+# target to generate assembly for a file
+src/parser/errors.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/errors.cpp.s
+.PHONY : src/parser/errors.cpp.s
+
+src/parser/parser.o: src/parser/parser.cpp.o
+.PHONY : src/parser/parser.o
+
+# target to build an object file
+src/parser/parser.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/parser.cpp.o
+.PHONY : src/parser/parser.cpp.o
+
+src/parser/parser.i: src/parser/parser.cpp.i
+.PHONY : src/parser/parser.i
+
+# target to preprocess a source file
+src/parser/parser.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/parser.cpp.i
+.PHONY : src/parser/parser.cpp.i
+
+src/parser/parser.s: src/parser/parser.cpp.s
+.PHONY : src/parser/parser.s
+
+# target to generate assembly for a file
+src/parser/parser.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/parser.cpp.s
+.PHONY : src/parser/parser.cpp.s
+
+src/parser/symboltable.o: src/parser/symboltable.cpp.o
+.PHONY : src/parser/symboltable.o
+
+# target to build an object file
+src/parser/symboltable.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/symboltable.cpp.o
+.PHONY : src/parser/symboltable.cpp.o
+
+src/parser/symboltable.i: src/parser/symboltable.cpp.i
+.PHONY : src/parser/symboltable.i
+
+# target to preprocess a source file
+src/parser/symboltable.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/symboltable.cpp.i
+.PHONY : src/parser/symboltable.cpp.i
+
+src/parser/symboltable.s: src/parser/symboltable.cpp.s
+.PHONY : src/parser/symboltable.s
+
+# target to generate assembly for a file
+src/parser/symboltable.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cstc.dir/build.make CMakeFiles/cstc.dir/src/parser/symboltable.cpp.s
+.PHONY : src/parser/symboltable.cpp.s
 
 src/snippets.o: src/snippets.cpp.o
 .PHONY : src/snippets.o
@@ -186,9 +570,57 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... cstc"
+	@echo "... src/lexer/errors.o"
+	@echo "... src/lexer/errors.i"
+	@echo "... src/lexer/errors.s"
+	@echo "... src/lexer/lexer.o"
+	@echo "... src/lexer/lexer.i"
+	@echo "... src/lexer/lexer.s"
+	@echo "... src/lexer/token.o"
+	@echo "... src/lexer/token.i"
+	@echo "... src/lexer/token.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/module.o"
+	@echo "... src/module.i"
+	@echo "... src/module.s"
+	@echo "... src/parser/ast/ast.o"
+	@echo "... src/parser/ast/ast.i"
+	@echo "... src/parser/ast/ast.s"
+	@echo "... src/parser/ast/base_math.o"
+	@echo "... src/parser/ast/base_math.i"
+	@echo "... src/parser/ast/base_math.s"
+	@echo "... src/parser/ast/flow.o"
+	@echo "... src/parser/ast/flow.i"
+	@echo "... src/parser/ast/flow.s"
+	@echo "... src/parser/ast/func.o"
+	@echo "... src/parser/ast/func.i"
+	@echo "... src/parser/ast/func.s"
+	@echo "... src/parser/ast/literal.o"
+	@echo "... src/parser/ast/literal.i"
+	@echo "... src/parser/ast/literal.s"
+	@echo "... src/parser/ast/namespace.o"
+	@echo "... src/parser/ast/namespace.i"
+	@echo "... src/parser/ast/namespace.s"
+	@echo "... src/parser/ast/struct.o"
+	@echo "... src/parser/ast/struct.i"
+	@echo "... src/parser/ast/struct.s"
+	@echo "... src/parser/ast/type.o"
+	@echo "... src/parser/ast/type.i"
+	@echo "... src/parser/ast/type.s"
+	@echo "... src/parser/ast/var.o"
+	@echo "... src/parser/ast/var.i"
+	@echo "... src/parser/ast/var.s"
+	@echo "... src/parser/errors.o"
+	@echo "... src/parser/errors.i"
+	@echo "... src/parser/errors.s"
+	@echo "... src/parser/parser.o"
+	@echo "... src/parser/parser.i"
+	@echo "... src/parser/parser.s"
+	@echo "... src/parser/symboltable.o"
+	@echo "... src/parser/symboltable.i"
+	@echo "... src/parser/symboltable.s"
 	@echo "... src/snippets.o"
 	@echo "... src/snippets.i"
 	@echo "... src/snippets.s"
