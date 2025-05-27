@@ -13,6 +13,7 @@
 #include <vector>
 #include <map>
 #include <filesystem>
+#include <optional>
 
 namespace std {
     namespace fs = std::filesystem;
@@ -25,8 +26,8 @@ class Module final : public symbol::Namespace {
 
     bool is_main_file = false; // wether this is the main module
     bool is_stdlib = false;
-    std::map<String, Module*> deps = {}; // dependency modules
-    std::vector<lexer::Token> tokens = {};
+    std::map<String, Module *> deps = {};      //> dependency modules
+    std::vector<lexer::Token> tokens = {};     //> modules tokens
 
     protected:
     String _str();
@@ -36,10 +37,10 @@ class Module final : public symbol::Namespace {
 
     public:
 
-    String module_name;             // representation module name
-    static std::fs::path directory; // main program directory
-    std::fs::path hst_file;         // header location (relative)
-    std::fs::path cst_file;         // source location (relative)
+    String module_name;             //> representation module name
+    static std::fs::path directory; //> main program directory
+    std::fs::path hst_file;         //> header location (relative)
+    std::fs::path cst_file;         //> source location (relative)
 
     bool isHeader();
     bool isKnown ();
@@ -60,8 +61,12 @@ class Module final : public symbol::Namespace {
      * @brief compare two modules about their load order
     */
     static Module* create(String path, String dir, String overpath, bool is_stdlib,std::vector<lexer::Token> tokens={}, bool is_main_file=false, bool from_path=false);
-
 };
+
+extern std::optional<std::vector<String>> getImportList(std::vector<lexer::Token>);
+/**
+ * @brief get a symbol list for an import. Meta-function. Prefer not to use.
+*/
 
 
 

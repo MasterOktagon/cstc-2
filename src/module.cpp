@@ -24,6 +24,8 @@
 #include <map>
 #include "module.hpp"
 #include <iostream>
+#include <optional>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -170,11 +172,12 @@ String Module::mod2Path(String mod){
 }
 
 String Module::_str(){
-    return fillup("\e[1m"s + module_name + "\e[0m", 50) +
+  return fillup("\e[1m"s + module_name + "\e[0m", 50) +
         (isHeader() ? "\e[36;1m[h]\e[0m"s : "   "s) +
         (is_main_file ? "\e[32;1m[m]\e[0m"s : "   "s) +
         (is_stdlib ? "\e[33;1m[s]\e[0m"s : "   "s) +
-        (module_name == "std::lang" ? "\e[1m[l]\e[0m"s : "   "s) + " @ " + (cst_file.string())
+        (module_name == "std::lang" ? "\e[1m[l]\e[0m"s : "   "s) +
+        " @ " + (cst_file.string())
     ;
 }
 
@@ -186,6 +189,28 @@ bool Module::loadOrder(Module *a, Module *b){
         if (m == b) return false;
     }
     return true;
+}
+
+std::optional<std::vector<String>> getImportList(std::vector<lexer::Token> t) {
+    if (t.size() == 0)
+        return {};
+    std::vector<String> out = {};
+
+    lexer::Token::Type last = lexer::Token::Type::COMMA;
+
+    for (lexer::Token tok : t) {
+        if (tok.type == lexer::Token::Type::COMMA) {};
+        if (tok.type == lexer::Token::Type::ID) {
+            if (last == lexer::Token::Type::COMMA) {
+                out.push_back(tok.value);
+            } else {
+                return {};
+            }
+        }
+        else { return {}; }
+        last = tok.type;
+    }
+    return out;
 }
 
 void Module::preprocess(){
@@ -212,10 +237,12 @@ void Module::preprocess(){
                     String as;
                     uint64 i2 = 0;
                     bool importall = false;
+                    bool has_import = false;
+                    std::vector<String> from = {};
                     for (lexer::Token a : buffer){
                         //std::cout << i2 << " " << new_module_name << std::endl;
-                        if (a.type == lexer::Token::IMPORT){
-                            i2++;
+                        if (a.type == lexer::Token::IMPORT && !has_import){
+                            i2++; has_import = true;
                             continue;
                         }
                         else if (last == lexer::Token::SUBNS && (a.type == lexer::Token::DOTDOT || a.type == lexer::Token::ID)){
@@ -233,6 +260,26 @@ void Module::preprocess(){
                                 String as = buffer.at(i2+1).value;
                                 break;
                             } else {
+                                goto disallowed;
+                            }
+                        }
+                        else if ((last == lexer::Token::DOTDOT || last == lexer::Token::ID) && a.type == lexer::Token::Type::IN){
+                            if (buffer.size() > i2 + 3 &&
+                                buffer.at(i2 + 1).type == lexer::Token::Type::BLOCK_OPEN &&
+                                buffer.at(buffer.size() - 1).type == lexer::Token::Type::END_CMD &&
+                                buffer.at(buffer.size() - 2).type == lexer::Token::Type::BLOCK_CLOSE) {
+                            
+                                try {
+                                    from = getImportList(
+                                                subvector(buffer, i2 + 2, 1,
+                                                        buffer.size() - 2))
+                                                .value();
+                                    break;
+                                } catch (const std::bad_optional_access&) { // urgh!
+                                    goto disallowed;
+                                }
+                            }
+                            else {
                                 goto disallowed;
                             }
                         }
@@ -261,12 +308,13 @@ void Module::preprocess(){
                     Module* m = Module::create(new_module_name, directory.string(), cst_file, is_stdlib, buffer);
                     if (m != nullptr){
                         deps[m->module_name] = m;
+                        for (String s : from) {
+                            import_from[s] = m->module_name + "::" + s;
+                        }
                         if (importall) include.push_back(m);
                         else if (as != "") add(as, m);
                         else contents[module_name] = {m};
                     }
-
-                    // TODO parse import-from
 
                     if (!at_top && m != nullptr){
                         lexer::warn("Import not at top", buffer, "This import statement was not at the top of the module", 23);
