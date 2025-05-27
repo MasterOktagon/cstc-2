@@ -7,6 +7,7 @@
 #include "../symboltable.hpp"
 #include <iostream>
 #include "../parser.hpp"
+#include "import.hpp"
 #include "namespace.hpp"
 #include "var.hpp"
 #include "../errors.hpp"
@@ -26,7 +27,7 @@ std::string SubBlockAST::emit_cst(){
 std::string SubBlockAST::emit_ll(int* locc, std::string inp){
     std::string ret = "";
     for (AST* a : contents){
-        ret += " ; " + a->emit_cst() + "\n";
+        //ret += " ; " + a->emit_cst() + "\n";
         ret += a->emit_ll(locc, "");
     }
 
@@ -39,19 +40,22 @@ AST* SubBlockAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Nam
 
     while (tokens.size() > 0){
         int split = parser::rsplitStack(tokens, {lexer::Token::Type::END_CMD, lexer::Token::Type::BLOCK_CLOSE}, local);
-        std::vector<lexer::Token> buffer = parser::subvector(tokens, 0,1,split+1);
-        AST* expr = parser::parseOneOf(buffer, {
-            NamespaceAST::parse,
-            VarInitlAST::parse,
-            VarDeclAST::parse,
-            parseStatement,
-        }, local, sr, "void");
+        std::vector<lexer::Token> buffer =
+            parser::subvector(tokens, 0, 1, split + 1);
+        if (!(buffer.size() == 1 && buffer.at(0).type == lexer::Token::END_CMD)){
+            AST* expr = parser::parseOneOf(
+                buffer, {
+                            NamespaceAST::parse, VarInitlAST::parse,
+                            VarDeclAST::parse, parseStatement,
+                            ImportAST::parse
+                        }, local, sr, "void");
 
-        if (expr == nullptr){
-            parser::error("Expected expression", {tokens[0], tokens.at(split)}, "Expected a valid expression (Did you forget a ';'?)", 31);
-        }
-        else {
-            contents.push_back(expr);
+            if (expr == nullptr){
+                parser::error("Expected expression", {tokens[0], tokens.at(split)}, "Expected a valid expression (Did you forget a ';'?)", 31);
+            }
+            else {
+                contents.push_back(expr);
+            }
         }
         tokens = parser::subvector(tokens, split+1,1,tokens.size());
     }
