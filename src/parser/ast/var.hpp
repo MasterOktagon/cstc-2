@@ -1,85 +1,54 @@
 #pragma once
 #include "ast.hpp"
 #include <vector>
-#include "../../lexer/lexer.hpp"
 #include "../symboltable.hpp"
 #include "base_math.hpp"
-#include <string>
 
-AST* parseStatement(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type="@unknown");
+sptr<AST> parseStatement(PARSER_FN);
 extern String parse_name(std::vector<lexer::Token>);
 
 class VarDeclAST : public AST {
 
     String name = "";
-    AST* type = nullptr;
+    sptr<AST> type = nullptr;
+    symbol::Reference* v=nullptr;
 
     public:
-    VarDeclAST(String name, AST* type);
-    virtual bool isConst(){return false;} // do constant folding or not
-    virtual ~VarDeclAST(){delete type;}
-    virtual uint64 nodeSize(){return 1;} // how many nodes to to do
-    virtual String emit_ll(int*, String);
-    /*
-        Emit llvm IR code in human-readable form
+    VarDeclAST(String name, sptr<AST> type, symbol::Reference* v);
+    virtual bool isConst() const {return false;} // do constant folding or not
+    virtual ~VarDeclAST(){};
+    virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
+    virtual String emitLL(int*, String) const;
+    virtual String emitCST() const {return type->getCstType() + " " + name + ";";}
+    virtual String getCstType() const {return name;}
+    virtual String getLLType() const {return "";}
+    virtual void forceType(String){}
 
-        [param locc] local variable name counter
-    */
-    //virtual llvm::Value* codegen(){return nullptr;}
-    /*
-        Emit llvm-bitcode to be compiled later
-    */
-
-    virtual String emit_cst(){return type->getCstType() + " " + name + ";";}
-    /*
-        Emit C* code
-    */
-    
-    virtual String getCstType(){return name;}
-    virtual String getLLType(){return "";}
-    virtual void forceType(String type){}
-    /*
-        Try to enforce a specific type
-    */
-
-    static AST* parse(std::vector<lexer::Token>, int local, symbol::Namespace* sr, String expected_type="@unknown");
+    static sptr<AST> parse(PARSER_FN);
 };
 
 class VarInitlAST : public AST {
 
     String name = "";
-    AST* type = nullptr;
-    AST* expression = nullptr;
+    sptr<AST> type = nullptr;
+    sptr<AST> expression = nullptr;
+    symbol::Reference* v=nullptr;
+    bool as_optional = false;
 
     public:
-    VarInitlAST(String name, AST* type, AST* expr);
+    VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Reference* v, std::vector<lexer::Token> tokens);
     virtual bool isConst(){return false;} // do constant folding or not
-    virtual ~VarInitlAST(){delete type; delete expression;}
-    virtual uint64 nodeSize(){return expression->nodeSize() + 1;} // how many nodes to to do
-    virtual String emit_ll(int*, String);
-    /*
-        Emit llvm IR code in human-readable form
+    virtual ~VarInitlAST(){};
+    virtual uint64 nodeSize() const {return expression->nodeSize() + 1;} // how many nodes to to do
+    virtual String emitLL(int*, String) const;
 
-        [param locc] local variable name counter
-    */
-    //virtual llvm::Value* codegen(){return nullptr;}
-    /*
-        Emit llvm-bitcode to be compiled later
-    */
-
-    virtual String emit_cst(){return type->getCstType() + " " + name + " = " + expression->emit_cst() + ";";}
-    /*
-        Emit C* code
-    */
+    virtual String emitCST() const {return type->getCstType() + " " + name + " = " + expression->emitCST() + ";";}
     
-    virtual String getCstType(){return name;}
-    virtual String getLLType(){return "";}
-    virtual void forceType(String type){}
-    /*
-        Try to enforce a specific type
-    */
+    virtual String getCstType() const {return name;}
+    virtual String getLLType() const {return "";}
+    virtual void forceType(String){}
 
-    static AST* parse(std::vector<lexer::Token>, int local, symbol::Namespace* sr, String expected_type="@unknown");
+    static sptr<AST> parse(PARSER_FN);
 };
 
 class VarAccesAST : public AST {
@@ -87,69 +56,38 @@ class VarAccesAST : public AST {
     symbol::Reference* var = nullptr;
 
     public:
-    VarAccesAST(String name, symbol::Reference* sr);
+    VarAccesAST(String name, symbol::Reference* sr, std::vector<lexer::Token> tokens);
     virtual bool isConst(){return false;} // do constant folding or not
     virtual ~VarAccesAST(){}
-    virtual uint64 nodeSize(){return 1;} // how many nodes to to do
-    virtual String emit_ll(int*, String);
-    /*
-        Emit llvm IR code in human-readable form
+    virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
+    virtual String emitLL(int*, String) const;
+    virtual String emitCST() const {return name;}
 
-        [param locc] local variable name counter
-    */
-    //virtual llvm::Value* codegen(){return nullptr;}
-    /*
-        Emit llvm-bitcode to be compiled later
-    */
-
-    virtual String emit_cst(){return name;}
-    /*
-        Emit C* code
-    */
-    
-    virtual String getCstType(){return var->getCstType();}
-    virtual String getLLType(){return "";}
+    virtual String getCstType() const {return var->getCstType();}
+    virtual String getLLType() const {return "";}
     virtual void forceType(String type);
-    /*
-        Try to enforce a specific type
-    */
 
-    static AST* parse(std::vector<lexer::Token>, int local, symbol::Namespace* sr, String expected_type="@unknown");
+    static sptr<AST> parse(PARSER_FN);
 };
 
 class VarSetAST : public ExpressionAST {
     String name = "";
     symbol::Reference* var = nullptr;
-    AST* expr = nullptr;
+    sptr<AST> expr = nullptr;
+    bool as_optional = false;
 
     public:
-    VarSetAST(String name, symbol::Reference* sr, AST* expr);
+    VarSetAST(String name, symbol::Reference* sr, sptr<AST> expr, std::vector<lexer::Token> tokens);
     virtual bool isConst(){return false;} // do constant folding or not
-    virtual ~VarSetAST(){delete expr;}
-    virtual uint64 nodeSize(){return expr->nodeSize() + 1;} // how many nodes to to do
-    virtual String emit_ll(int*, String);
-    /*
-        Emit llvm IR code in human-readable form
+    virtual ~VarSetAST(){};
+    virtual uint64 nodeSize() const {return expr->nodeSize() + 1;} // how many nodes to to do
+    virtual String emitLL(int*, String) const;
+    virtual String emitCST() const {return "("s + name + " = " + expr->emitCST() + ")";}
 
-        [param locc] local variable name counter
-    */
-    //virtual llvm::Value* codegen(){return nullptr;}
-    /*
-        Emit llvm-bitcode to be compiled later
-    */
-
-    virtual String emit_cst(){return String("(") + name + " = " + expr->emit_cst() + ")";}
-    /*
-        Emit C* code
-    */
-    
-    virtual String getCstType(){return var->getCstType();}
-    virtual String getLLType(){return "";}
+    virtual String getCstType() const {return var->getCstType();}
+    virtual String getLLType() const {return "";}
     virtual void forceType(String type);
-    /*
-        Try to enforce a specific type
-    */
 
-    static AST* parse(std::vector<lexer::Token>, int local, symbol::Namespace* sr, String expected_type="@unknown");
+    static sptr<AST> parse(PARSER_FN);
 };
 

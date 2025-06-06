@@ -113,4 +113,6 @@ class SegFException : public Exception {
     }
 };
 
+#define instanceOf(el,of) ((of*) el.get() == dynamic_cast<of*>(el.get()))
+
 

@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_compile_options(-W -Wall -Wextra -Wno-literal-suffix)
+add_compile_options(-W -Wall -Wextra -Wno-literal-suffix -g)
 
 file(GLOB_RECURSE SRC "src/*")
 include_directories("lib/segvcatch/lib/")

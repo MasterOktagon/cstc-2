@@ -13,13 +13,13 @@
 #include <optional>
 #include "../../module.hpp"
 
-AST* ImportAST::parse(std::vector<lexer::Token> tokens, int,
+sptr<AST> ImportAST::parse(std::vector<lexer::Token> tokens, int,
                       symbol::Namespace*, String) {
 
     if (tokens.size() == 1 && tokens.at(0).type == lexer::Token::IMPORT) {
         parser::error("Expected name", {tokens.at(0)},
                                   "Exptected a module name after 'import'", 76);
-                        return new AST;
+                        return share<AST>(new AST);
     }
     if (tokens.size() < 2)
         return nullptr;
@@ -44,19 +44,19 @@ AST* ImportAST::parse(std::vector<lexer::Token> tokens, int,
                               lexer::Token::Type::END_CMD)) {
                             parser::error("Expected End-of-Statement", {buffer.at(i2+2)},
                                   "Expected a ';'", 30);
-                            return new AST;
+                            return share<AST>(new AST);
                         }
                         String as = buffer.at(i2+1).value;
                         break;
                     } else {
                         parser::error("Expected Symbol", {buffer.at(i2+1)},
                                   "Exptected a name after 'as'", 30);
-                        return new AST;
+                        return share<AST>(new AST);
                     }
                 } else {
                     parser::error("Expected Symbol", {a},
                                   "Exptected a name after 'as'", 30);
-                    return new AST;
+                    return share<AST>(new AST);
                 }
             }
             else if ((last == lexer::Token::DOTDOT || last == lexer::Token::ID) && a.type == lexer::Token::Type::IN){
@@ -76,13 +76,13 @@ AST* ImportAST::parse(std::vector<lexer::Token> tokens, int,
                             subvector(buffer, i2 + 2, 1, buffer.size() - 2),
                             "Expected a valid list of identifiers seperated with commas",
                             0); // TODO make this error better
-                        return new AST;
+                        return share<AST>(new AST);
                     }
                 }
                 else {
                     parser::error("Expected Block Open", {a},
                                   "Exptected a '{ after ':'", 51);
-                    return new AST;
+                    return share<AST>(new AST);
                 }
             }
             else if (last == lexer::Token::SUBNS && a.type == lexer::Token::Type::MUL){
@@ -92,7 +92,7 @@ AST* ImportAST::parse(std::vector<lexer::Token> tokens, int,
                 } else {
                     parser::error("Import-all must be at line End", {a},
                                   "import-all must be in format 'import my::nice::module::*;'", 51);
-                    return new AST;
+                    return share<AST>(new AST);
                 }
             }
             else {
@@ -101,12 +101,12 @@ AST* ImportAST::parse(std::vector<lexer::Token> tokens, int,
                                   lexer::getTokenName(a.type) +
                                   " Token in import statement",
                               76);
-                return new AST;
+                return share<AST>(new AST);
             }
             last = a.type; i2++;
         }
 
-        return new AST;
+        return share<AST>(new AST);
     }
 
     for (uint32 i = 0; i < tokens.size() - 1; i++) {
@@ -114,7 +114,7 @@ AST* ImportAST::parse(std::vector<lexer::Token> tokens, int,
             parser::error(
                 "Unexpected import", {tokens.at(i)},
                 "'import' is expected to be the first token in a line.", 75);
-            return new AST;
+            return share<AST>(new AST);
         }
     }
     

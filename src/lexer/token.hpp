@@ -18,8 +18,8 @@ namespace lexer {
 
         public:
         enum Type {
-            /*
-            Enum of all available Token types
+            /**
+             * @enum of all available Token types
             */
 
                 //  SPECIAL   //
@@ -81,6 +81,7 @@ namespace lexer {
             ACCESS   ,        // .
             COMMA    ,        // ,
             DOTDOT   ,        // ..
+            DOTDOTDOT,        // ...
 
                 // PARANTHESIS //
             OPEN     ,        // (
@@ -122,24 +123,29 @@ namespace lexer {
             FINAL     ,
             CONST     ,
             NAMESPACE ,
-            NEW
+            NEW       ,
+            FINALLY
         };
 
-        Type type;
-        String value;
+        Type type;     //> this tokens type
+        String value;  //> this tokens contents
 
-        uint64 l, c;
-        String filename;
-        sptr<String> line_contents;
+        uint64 l, c;                //> this tokens position in the File
+        String filename;            //> this tokens File's name (for error messages)
+        sptr<String> line_contents; //> this tokens line's contents (for error messages)
 
         Token(Type t, String content, uint64 l, uint64 c, String filename, sptr<String> lc);
         Token() = default;
         virtual ~Token();
+
+        bool operator == (Token& other);
     };
 
     String getTokenName(Token::Type);
+    /**
+     * get a TokenType's Name as String
+     */
 }
 
-
-
+const lexer::Token nullToken = lexer::Token(lexer::Token::NONE, "", 0, 0, "", nullptr);
 

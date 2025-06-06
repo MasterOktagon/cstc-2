@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <utility>
 #include <vector>
 #include <map>
@@ -26,18 +27,22 @@ namespace symbol {
         virtual ~Reference();
         virtual LLType getLLType(){return "void"s;}
         virtual CstType getCstType(){return "void"s;}
-        virtual String getLoc() const {
+        String getLoc() const {
             if (parent == nullptr) return loc;
             return parent->getLoc() + "::"s + loc;
         }
-        virtual String getLLLoc() const {
-            if (parent == nullptr) return loc;
+        String getLLLoc() const {
+            if (parent == nullptr) return "%"s + loc;
             return parent->getLLLoc() + ".."s + loc;
         }
         virtual String getRawLoc(){return loc;}
 
         virtual void add(String loc, Reference* sr) abstract;
         virtual size sizeBytes(){return 0;}
+
+        virtual const String getName() const abstract;
+
+        virtual std::vector<symbol::Reference*> operator [] (String) {return {};}
     };
 
     class Variable : public Reference {
@@ -61,6 +66,7 @@ namespace symbol {
         virtual LLType getLLType(){return "void"s;}
         virtual void add(String, Reference*){}
         virtual CstType getCstType(){return type;}
+        const String getName() const {return "Variable";};
     };
 
     class Function : public Reference {
@@ -85,6 +91,7 @@ namespace symbol {
 
         virtual ~Function(){};
         virtual size sizeBytes(){return 8;}
+        const String getName() const {return "Function";};
     };
     
     class Namespace : public Reference {
@@ -93,13 +100,15 @@ namespace symbol {
         */
 
         protected:
-        std::vector<Namespace*> include {};
+          std::vector<Namespace *> include{};
+          std::map<String, String> import_from = {}; //> import-from map
 
         virtual String _str(){
             return "symbol::Namespace "s + getLoc();
         }
         public:
         MultiMap<String, Reference*> contents = {};
+        std::vector<String> unknown_vars = {};
         virtual void add(String loc, Reference* sr);
         Namespace() = default;
         Namespace(String loc){this->loc = loc;};
@@ -128,6 +137,7 @@ namespace symbol {
         bool ALLOWS_ENUMS       = false;
 
         virtual std::vector<symbol::Reference*> operator [] (String subloc);
+        const String getName() const {return "Namespace";}
     };
 
     class Opaque {
@@ -173,6 +183,45 @@ namespace symbol {
             }
             return s;
         }
+
+        const String getName() const {return "Struct";}
+    };
+
+    class EnumEntry : public Reference {
+        
+        virtual ~EnumEntry() = default;
+        EnumEntry(String name){loc = name;}
+    };
+
+    class Enum : public Namespace {
+        /**
+         * Reference that holds data for an Enumeration type
+         */
+
+        protected:
+        uint64 default_value = 0;
+        bool has_default = false;
+        uint32 bits = 8;
+
+        public:
+        bool needs_stringify = false;
+        bool needs_from_string = false;
+        LLType getLLType(){return "i"s + std::to_string(bits);}
+        CstType getCstType(){return getLoc();}
+
+        const String getName() const {return "Enumeration";}
+
+        virtual ~Enum(){
+            ALLOWS_ENUMS = true;
+            ALLOWS_SUBCLASSES = false;
+        }
+        Enum() = default;
+    };
+
+    class EnumGroup : public Enum {
+        /**
+         * Reference that holds data for an Enumeration type
+         */
     };
 }
 

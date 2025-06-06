@@ -16,37 +16,26 @@
 
 class NamespaceAST : public AST {
 
-    SubBlockAST* block = nullptr;
+    sptr<SubBlockAST> block = nullptr;
     symbol::Namespace* ns = nullptr;
 
     public:
-    NamespaceAST(SubBlockAST* a, symbol::Namespace* ns){block = a; this->ns = ns;}
-    virtual bool isConst(){return false;} // do constant folding or not
-    virtual ~NamespaceAST(){}
-    virtual std::string emit_ll(int* locc, std::string inp);
-    /*
-        Emit llvm IR code in human-readable form
-
-        [param locc] local variable name counter
-    */
-    //virtual llvm::Value* codegen(){return nullptr;}
-    /*
-        Emit llvm-bitcode to be compiled later
-    */
-
-    virtual std::string emit_cst();
-    /*
-        Emit C* code
-    */
+    NamespaceAST(sptr<SubBlockAST> a, symbol::Namespace* ns){block = a; this->ns = ns;}
+    virtual bool isConst() {return false;} // do constant folding or not
+    virtual ~NamespaceAST(){};
+    virtual String emitLL(int* locc, String inp) const;
+    virtual String emitCST() const;    
+    virtual String getCstType() const {return "void";}
+    virtual String getLLTtype() const { return ""; }
     
-    virtual std::string getCstType(){return "void";}
-    virtual std::string getLLTtype(){return "";}
-    virtual void forceType(std::string){}
-    /*
-        Try to enforce a specific type
-    */
+    virtual void forceType(String){}
 
-    static AST* parse(std::vector<lexer::Token>, int local, symbol::Namespace* sr, std::string expected_type="@unknown");
+    /**
+     * @brief parse a namespace declaration
+     *
+     * @return namespace AST or nullptr is not found
+     */
+    static sptr<AST> parse(PARSER_FN);
 };
 
 

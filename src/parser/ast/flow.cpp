@@ -1,3 +1,4 @@
+#include <memory>
 #include <string>
 #include "flow.hpp"
 #include "ast.hpp"
@@ -12,11 +13,11 @@
 #include "var.hpp"
 #include "../errors.hpp"
 
-std::string SubBlockAST::emit_cst(){
-    std::string ret = "";
-    for (AST* a : contents) {
-        ret += a->emit_cst();
-        if ((ExpressionAST*) a == dynamic_cast<ExpressionAST*>(a)){
+String SubBlockAST::emitCST() const {
+    String ret = "";
+    for (sptr<AST> a : contents) {
+        ret += a->emitCST();
+        if (instanceOf(a, ExpressionAST)){
             ret += ";"; // Expressions don't End on semicolons, therefore add one
         }
         ret += "\n";
@@ -24,26 +25,26 @@ std::string SubBlockAST::emit_cst(){
     return ret;
 }
 
-std::string SubBlockAST::emit_ll(int* locc, std::string inp){
-    std::string ret = "";
-    for (AST* a : contents){
-        //ret += " ; " + a->emit_cst() + "\n";
-        ret += a->emit_ll(locc, "");
+String SubBlockAST::emitLL(int* locc, String inp) const {
+    String ret = "";
+    for (sptr<AST> a : contents){
+        //ret += " ; " + a->emitCST() + "\n";
+        ret += a->emitLL(locc, "");
     }
 
     return ret + inp;
 }
 
-AST* SubBlockAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, std::string){
-    if (tokens.size() == 0) return new SubBlockAST;
-    std::vector<AST*> contents;
+sptr<AST> SubBlockAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, std::string){
+    if (tokens.size() == 0) return share<AST>(new SubBlockAST);
+    std::vector<sptr<AST>> contents;
 
     while (tokens.size() > 0){
         int split = parser::rsplitStack(tokens, {lexer::Token::Type::END_CMD, lexer::Token::Type::BLOCK_CLOSE}, local);
         std::vector<lexer::Token> buffer =
             parser::subvector(tokens, 0, 1, split + 1);
         if (!(buffer.size() == 1 && buffer.at(0).type == lexer::Token::END_CMD)){
-            AST* expr = parser::parseOneOf(
+            sptr<AST> expr = parser::parseOneOf(
                 buffer, {
                             NamespaceAST::parse, VarInitlAST::parse,
                             VarDeclAST::parse, parseStatement,
@@ -59,7 +60,7 @@ AST* SubBlockAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Nam
         }
         tokens = parser::subvector(tokens, split+1,1,tokens.size());
     }
-    auto b = new SubBlockAST();
+    auto b = share<SubBlockAST>(new SubBlockAST());
     b->contents = contents;
 
     return b;

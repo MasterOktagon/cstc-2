@@ -11,10 +11,8 @@
 #include "lexer/token.hpp"
 #include "parser/ast/ast.hpp"
 #include "parser/ast/flow.hpp"
-#include "parser/ast/literal.hpp"
 #include "parser/symboltable.hpp"
 #include "snippets.h"
-//#include "parser/parser.hpp"
 #include <algorithm>
 #include <asm-generic/errno.h>
 #include <cstdlib>
@@ -30,20 +28,26 @@
 #include <vector>
 
 
-std::map<String, Module*> Module::known_modules = {};
-std::list<String> Module::unknown_modules = {};
-std::list<Module*> Module::modules = {};
-std::fs::path Module::directory;
+std::map<String, Module*> Module::known_modules = {};  //> A map of all compile-time known modules to allow faster acces when importing
+std::list<String> Module::unknown_modules = {};        //> A map of all compile-time unknown modules to allow better error messages
+std::list<Module*> Module::modules = {};               //> A list of all modules loaded. This is used to determine the compile order 
+std::fs::path Module::directory;                       //> Project directory
 
-uint64 parsed_modules = 0;
+uint64 parsed_modules = 0; //> amount of parsed modules
 
-String Module::stdLibLocation(){
+/**
+ * @brief get the default stdlib location using the CSTC_STD environment variable
+ */
+String Module::stdLibLocation() {
     if (const char* p = std::getenv("CSTC_STD"))
         return p;
     return "";
 }
 
-inline String h(String s){
+/**
+ * @brief replace the ~ for the home path using the HOME environment variable
+ */
+inline String h(String s) {
     if (s[0] == '~'){
         return String(std::getenv("HOME")) + s.substr(1);
     }
@@ -58,7 +62,24 @@ bool Module::isKnown(){
    return std::fs::exists(cst_file);
 }
 
-Module* Module::create(String path, String, String overpath, bool is_stdlib, std::vector<lexer::Token> tokens, bool is_main_file, bool from_path){
+/**
+     * @brief return an imported module. This method checks if there already is a module of this name
+     * and reuses it if possible
+     *
+     * @param path path to check for can be a "real path" or an C* import module path: @see @param from_path
+     * @param dir  directory in which the callee is. currently unused
+     * @param overpath path of the callee
+     * @param is_stdlib depicts if this file is a stdlib file (for looking in CSTC_STD path)
+     * @param tokens tokens of the preprocessor-parser, used for error messages
+     * @param is_main_file whether this is the main file. should not be set outside the main function.
+     * @param from_path create this from a "real path" instead of a module
+     *
+     * @return Newly created Module (Pointer) if succesful or nullptr
+     */
+Module* Module::create(String path, String, String overpath, bool is_stdlib,
+                       std::vector<lexer::Token> tokens, bool is_main_file,
+                       bool from_path) {
+    
     String module_name = "<unknown>";
     if (!from_path){
         path = mod2Path(path);
@@ -144,6 +165,9 @@ Module::Module(String path, String dir, String module_name, bool is_stdlib, bool
     preprocess();
 }
 
+/**
+ * @brief convert a path to a module name
+ */
 String Module::path2Mod(String path){
     String out;
     size pos = path.find("/");
@@ -156,6 +180,9 @@ String Module::path2Mod(String path){
     return out;
 }
 
+/**
+ * @brief convert a module name to a path
+ */
 String Module::mod2Path(String mod){
     String out;
 
@@ -171,6 +198,9 @@ String Module::mod2Path(String mod){
     return out;
 }
 
+/**
+ * @brief get a visual representation of this Object
+ */
 String Module::_str(){
   return fillup("\e[1m"s + module_name + "\e[0m", 50) +
         (isHeader() ? "\e[36;1m[h]\e[0m"s : "   "s) +
@@ -181,6 +211,11 @@ String Module::_str(){
     ;
 }
 
+/**
+ * @brief compare two modules about their load order
+ *
+ * @return true, if a should be loaded before b
+ */
 bool Module::loadOrder(Module *a, Module *b){
     for (std::pair<String, Module*> p : a->deps){
         if (p.second == b) return false;
@@ -191,6 +226,9 @@ bool Module::loadOrder(Module *a, Module *b){
     return true;
 }
 
+/**
+ * @brief get a symbol list for an import. Meta-function. Prefer not to use.
+*/
 std::optional<std::vector<String>> getImportList(std::vector<lexer::Token> t) {
     if (t.size() == 0)
         return {};
@@ -213,6 +251,9 @@ std::optional<std::vector<String>> getImportList(std::vector<lexer::Token> t) {
     return out;
 }
 
+/**
+ * @brief tokenize this module and parse for imports to include them
+ */
 void Module::preprocess(){
     std::ifstream f(cst_file.string());
         String content((std::istreambuf_iterator<char>(f) ),
@@ -333,11 +374,18 @@ void Module::preprocess(){
     f.close();
 }
 
+/**
+ * @brief parse this module and create AST nodes
+ */
 void Module::parse(){
-    AST* root = SubBlockAST::parse(tokens, 0, this);
+    sptr<AST> root = SubBlockAST::parse(tokens, 0, this);
     if (root != nullptr){
-        int* i = new int; *i = 0;
-        std::cout << root->emit_ll(i,"") << std::endl;
+        int* i = new int;
+        *i     = 0;
+        // std::cout << root->emitCST() << std::endl;
+        // std::cout << root->emitLL(i,"") << std::endl;
+
+        delete i;
     }
     // check variables for usage
     for (std::pair<String, std::vector<symbol::Reference*>> sr : contents){

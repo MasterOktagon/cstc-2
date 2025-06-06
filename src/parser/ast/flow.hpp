@@ -6,45 +6,34 @@
 // layouts the flow ASTs
 //
 
-#include <string>
 #include "ast.hpp"
 #include <vector>
-#include "../../lexer/lexer.hpp"
 #include "../symboltable.hpp"
 
 
 class SubBlockAST : public AST {
     public:
-
-    std::vector<AST*> contents = {};
+    std::vector<sptr<AST>> contents = {}; //> block comments
 
     SubBlockAST(){}
-    virtual bool isConst(){return false;} // do constant folding or not
-    virtual ~SubBlockAST(){}
-    virtual std::string emit_ll(int* locc, std::string inp);
-    /*
-        Emit llvm IR code in human-readable form
+    virtual ~SubBlockAST() {}
 
-        [param locc] local variable name counter
-    */
-    //virtual llvm::Value* codegen(){return nullptr;}
-    /*
-        Emit llvm-bitcode to be compiled later
-    */
+    // fwd declarations @see @class AST
 
-    virtual std::string emit_cst();
-    /*
-        Emit C* code
-    */
+    virtual bool isConst(){return false;}
+    virtual String emitLL(int* locc, String inp) const;
+
+    virtual String emitCST() const;
     
-    virtual std::string getCstType(){return "void";}
-    virtual std::string getLLTtype(){return "";}
-    virtual void forceType(std::string type){}
-    /*
-        Try to enforce a specific type
-    */
+    virtual CstType getCstType() const {return "void";}
+    virtual LLType  getLLTtype() const { return ""; }
+    virtual uint64 nodeSize() const { return contents.size();};
+    virtual void forceType(CstType){}
 
-    static AST* parse(std::vector<lexer::Token>, int local, symbol::Namespace* sr, std::string expected_type="@unknown");
+    /**
+     * @brief parse a Subblock
+     */
+    static sptr<AST> parse(PARSER_FN);
 };
 
 

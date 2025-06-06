@@ -1,252 +1,281 @@
-#include "ast.hpp"
-#include <vector>
-#include "../../lexer/lexer.hpp"
-#include "../symboltable.hpp"
-#include "../parser.hpp"
-#include <string>
 #include "var.hpp"
+#include "../../lexer/lexer.hpp"
+#include "../errors.hpp"
+#include "../parser.hpp"
+#include "../symboltable.hpp"
+#include "ast.hpp"
 #include "base_math.hpp"
 #include "literal.hpp"
 #include "type.hpp"
 #include <iostream>
-#include "../errors.hpp"
+#include <string>
+#include <vector>
 
-String parse_name(std::vector<lexer::Token> tokens){
-    if (tokens.size() == 0) return "";
-    String name = "";
+String parse_name(std::vector<lexer::Token> tokens) {
+    if (tokens.size() == 0)
+        return "";
+    String             name = "";
     lexer::Token::Type last = lexer::Token::Type::SUBNS;
-    //std::cout << tokens.size() << std::endl;
-    
-    if (tokens[0].type == lexer::Token::Type::SUBNS){
+
+    if (tokens[0].type == lexer::Token::Type::SUBNS) {
         parser::error("Expected Symbol", {tokens[0]}, "module name or variable name expected", 30);
         return "";
     }
-    for (lexer::Token t : tokens){
-        if (last == lexer::Token::Type::SUBNS && t.type == lexer::Token::Type::ID){
+    for (lexer::Token t : tokens) {
+        if (last == lexer::Token::Type::SUBNS && t.type == lexer::Token::Type::ID) {
             name += t.value;
-        }
-        else if (last == lexer::Token::Type::ID && t.type == lexer::Token::Type::SUBNS){
+        } else if (last == lexer::Token::Type::ID && t.type == lexer::Token::Type::SUBNS) {
             name += "::";
-        }
-        else return "null";
+        } else
+            return "null";
         last = t.type;
     }
-    if (last == lexer::Token::Type::SUBNS){
-        parser::error("Expected Symbol", {tokens[tokens.size()-1]}, "module name or variable name expected", 30);
+    if (last == lexer::Token::Type::SUBNS) {
+        parser::error("Expected Symbol", {tokens[tokens.size() - 1]}, "module name or variable name expected", 30);
         return "";
     }
-    return name; 
+    return name;
 }
 
-AST* parseStatement(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type){
-    if (tokens.size() == 0 || tokens[tokens.size()-1].type != lexer::Token::Type::END_CMD) return nullptr;
-    return math::parse(parser::subvector(tokens, 0,1,tokens.size()-1), local, sr, expected_type);
+sptr<AST> parseStatement(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
+    if (tokens.size() == 0 || tokens[tokens.size() - 1].type != lexer::Token::Type::END_CMD)
+        return nullptr;
+    return math::parse(parser::subvector(tokens, 0, 1, tokens.size() - 1), local, sr, expected_type);
 }
 
-VarDeclAST::VarDeclAST(String name, AST* type){
+VarDeclAST::VarDeclAST(String name, sptr<AST> type, symbol::Reference* v) {
     this->name = name;
     this->type = type;
+    this->v    = v;
 }
 
-AST* VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type){
-    if (tokens.size() < 3) return nullptr;
-    if (tokens[tokens.size()-1].type == lexer::Token::Type::END_CMD){
-        String name = "";
-        if (tokens[tokens.size()-2].type == lexer::Token::Type::ID){
-            name = tokens[tokens.size()-2].value;
-            AST* type = Type::parse(parser::subvector(tokens, 0,1,tokens.size()-2), local, sr);
-            if (type != nullptr){
-                if (!parser::isAtomic(type->getCstType())){
-                    parser::error("Unknown type", {tokens[0], tokens[tokens.size()-3]}, "A type of this name is unknown in this scope", 19);
-                    return new AST;
-                }
-                if ((*sr)[name].size() > 0){
-                    parser::error("Variable already defined", {tokens[tokens.size()-2]}, "A variable of this name is already defined in this scope", 25);
+sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
+    if (tokens.size() < 3)
+        return nullptr;
+    if (tokens[tokens.size() - 1].type == lexer::Token::Type::END_CMD) {
+        auto             tokens2 = tokens;
+        String           name    = "";
+        parser::Modifier m       = parser::getModifier(tokens);
+        if (tokens[tokens.size() - 2].type == lexer::Token::Type::ID) {
+            name           = tokens[tokens.size() - 2].value;
+            sptr<AST> type = Type::parse(parser::subvector(tokens, 0, 1, tokens.size() - 2), local, sr);
+            if (type != nullptr) {
+                // if (!parser::isAtomic(type->getCstType())){
+                //     parser::error("Unknown type", {tokens[0], tokens[tokens.size()-3]}, "A type of this name is
+                //     unknown in this scope", 19); return new AST;
+                // }
+                if ((*sr)[name].size() > 0) {
+                    parser::error("Variable already defined", {tokens[tokens.size() - 2]},
+                                  "A variable of this name is already defined in this scope", 25);
                     parser::note((*sr)[name][0]->tokens, "defined here:", 0);
-                    return new AST;
+                    return sptr<AST>(new AST);
                 }
-                if (parser::isAtomic(name)){
-                    parser::error("Unsupported name", {tokens[tokens.size()-2]}, String("The name ") + name + " refers to a scope or type and cannot be used as a variable name", 25);
-                    return new AST;
+                if (parser::isAtomic(name)) {
+                    parser::error(
+                        "Unsupported name", {tokens[tokens.size() - 2]},
+                        "The name "s + name + " refers to a scope or type and cannot be used as a variable name", 25);
+                    return sptr<AST>(new AST);
                 }
-                if (!parser::is_snake_case(name)){
-                    parser::warn("Wrong casing", {tokens[tokens.size()-2]}, "Variable name should be snake_case", 16);
+                if (!parser::is_snake_case(name)) {
+                    parser::warn("Wrong casing", {tokens[tokens.size() - 2]}, "Variable name should be snake_case", 16);
+                }
+                if (m & parser::Modifier::CONST) {
+                    parser::error("const declaration without initizialiation", tokens2,
+                                  "A variable can only be const if an initizialisation is given", 25);
+                    return sptr<AST>(new AST);
                 }
 
-                sr->add(name, new symbol::Variable(name, type->getCstType(), {tokens[tokens.size()-2]}, sr));
-                return new VarDeclAST(name, type);
+                auto v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
+                v->isConst = m & parser::Modifier::CONST;
+                sr->add(name, v);
+                return sptr<AST>(new VarDeclAST(name, type, v));
             }
         }
     }
     return nullptr;
 }
 
-String VarDeclAST::emit_ll(int*, String){
-    return String("%") + name + " = alloca " + type->getLLType() + "\n";
-}
+String VarDeclAST::emitLL(int*, String) const { return v->getLLLoc() + " = alloca " + type->getLLType() + "\n"; }
 
-
-
-
-
-VarInitlAST::VarInitlAST(String name, AST* type, AST* expr){
-    this->name = name;
-    this->type = type;
+VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Reference* v,
+                         std::vector<lexer::Token> tokens) {
+    this->name       = name;
+    this->type       = type;
     this->expression = expr;
+    this->v          = v;
+    this->tokens     = tokens;
 }
 
-AST* VarInitlAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type){
-    if (tokens.size() < 5) return nullptr;
-    if (tokens[tokens.size()-1].type == lexer::Token::Type::END_CMD){
-        String name = "";
-        int split = parser::rsplitStack(tokens, {lexer::Token::Type::SET}, local);
-        if (tokens[split-1].type == lexer::Token::Type::ID && split > 1){
-            name  = tokens[split-1].value;
-            AST* type = Type::parse(parser::subvector(tokens, 0,1,split-1), local, sr);
-            if (type == nullptr){
-                parser::error("Expected type", {tokens[0], tokens[split-1]}, "Expected a type before the identifier", 25);
-                return new AST;
+sptr<AST> VarInitlAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
+    if (tokens.size() < 5)
+        return nullptr;
+    if (tokens[tokens.size() - 1].type == lexer::Token::Type::END_CMD) {
+        String           name    = "";
+        auto             tokens2 = tokens;
+        parser::Modifier m       = parser::getModifier(tokens);
+        int              split   = parser::rsplitStack(tokens, {lexer::Token::Type::SET}, local);
+        if (tokens[split - 1].type == lexer::Token::Type::ID && split > 1) {
+            name           = tokens[split - 1].value;
+            sptr<AST> type = Type::parse(parser::subvector(tokens, 0, 1, split - 1), local, sr);
+            if (type == nullptr) {
+                // parser::error("Expected type", {tokens[0], tokens[split-1]}, "Expected a type before the identifier",
+                // 25);
+                return nullptr;
             }
-            AST* expr = math::parse(parser::subvector(tokens, split+1, 1, tokens.size()-1), local, sr, type->getCstType());
-            if (expr == nullptr){
-                parser::error("Expected expression", {tokens[split+1], tokens[tokens.size()-1]}, "Expected an expression", 25);
-                return new AST;
+            sptr<AST> expr =
+                math::parse(parser::subvector(tokens, split + 1, 1, tokens.size() - 1), local, sr, type->getCstType());
+            if (expr == nullptr) {
+                parser::error("Expected expression", {tokens[split + 1], tokens[tokens.size() - 1]},
+                              "Expected an expression", 25);
+                return share<AST>(new AST);
             }
-            if (!parser::isAtomic(type->getCstType())){
-                parser::error("Unknown type", {tokens[0], tokens[tokens.size()-3]}, "A type of this name is unknown in this scope", 19);
-                return new AST;
-            }
-            if ((*sr)[name].size() > 0){
-                parser::error("Variable already defined", {tokens[tokens.size()-2]}, "A variable of this name is already defined in this scope", 25);
+            // if (!parser::isAtomic(type->getCstType()) ){
+            //     parser::error("Unknown type", {tokens[0], tokens[tokens.size()-3]}, "A type of this name is unknown
+            //     in this scope", 19); return new AST;
+            // }
+            if ((*sr)[name].size() > 0) {
+                parser::error("Variable already defined", {tokens[tokens.size() - 2]},
+                              "A variable of this name is already defined in this scope", 25);
                 parser::note((*sr)[name][0]->tokens, "defined here:", 0);
-                return new AST;
+                return share<AST>(new AST);
             }
-            if (parser::isAtomic(name)){
-                parser::error("Unsupported name", {tokens[tokens.size()-2]}, String("The name ") + name + " refers to a scope or type and cannot be used as a variable name", 25);
-                return new AST;
+            if (parser::isAtomic(name)) {
+                parser::error("Unsupported name", {tokens[tokens.size() - 2]},
+                              String("The name ") + name +
+                                  " refers to a scope or type and cannot be used as a variable name",
+                              25);
+                return share<AST>(new AST);
             }
-            if (!parser::is_snake_case(name)){
-                parser::warn("Wrong casing", {tokens[split-1]}, "Variable name should be snake_case", 16);
+            if (!parser::is_snake_case(name) && !(m & parser::Modifier::CONST)) {
+                parser::warn("Wrong casing", {tokens[split - 1]}, "Variable name should be snake_case", 16);
+            }
+            if (!parser::IS_UPPER_CASE(name) && m & parser::Modifier::CONST) {
+                parser::warn("Wrong casing", {tokens[split - 1]}, "Variable name should be UPPER_CASE", 16);
             }
             expr->forceType(type->getCstType());
 
-            sr->add(name, new symbol::Variable(name, type->getCstType(), {tokens[split-1]}, sr));
-            return new VarInitlAST(name, type, expr);
+            auto v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
+            v->isConst = m & parser::Modifier::CONST;
+            sr->add(name, v);
+            return share<AST>(new VarInitlAST(name, type, expr, v, tokens));
         }
     }
     return nullptr;
 }
 
-String VarInitlAST::emit_ll(int* locc, String){
-    String s = String("%") + name + " = alloca " + type->getLLType() + ", align 8\n" +
-        "store " + expression->getLLType() + " {}, " + type->getLLType() + "* " + String("%") + name + ", align 8\n" ;
-    String l = expression->emit_ll(locc, s);
+String VarInitlAST::emitLL(int* locc, String) const {
+    String s = v->getLLLoc() + " = alloca " + type->getLLType() + ", align 8\n" + "store " + expression->getLLType() +
+               " {}, " + type->getLLType() + "* " + v->getLLLoc() + ", align 8\n";
+    String l = expression->emitLL(locc, s);
     return l;
 }
 
-
-
-
-
-VarAccesAST::VarAccesAST(String name, symbol::Reference* sr){
-    this->name = name;
-    this->var = sr;
+VarAccesAST::VarAccesAST(String name, symbol::Reference* sr, std::vector<lexer::Token> tokens) {
+    this->name   = name;
+    this->var    = sr;
+    this->tokens = tokens;
 }
 
-AST* VarAccesAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type){
-    if (tokens.size() == 0) return nullptr;
+sptr<AST> VarAccesAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace* sr, String) {
+    if (tokens.size() == 0)
+        return nullptr;
     String name = parse_name(tokens);
-    if (name == "") return new AST;
-    if (name == "null") return nullptr;
-    if ((*sr)[name].size() == 0){
+    if (name == "")
+        return share<AST>(new AST);
+    if (name == "null")
+        return nullptr;
+    if ((*sr)[name].size() == 0) {
         parser::error("Unknown variable", tokens, "A variable of this name was not found in this scope", 20);
-        return new AST;
+        return share<AST>(new AST);
     }
 
     symbol::Reference* p = (*sr)[name].at(0);
-    if (p == dynamic_cast<symbol::Variable*>(p)) ((symbol::Variable*) p)->used = true;
-    auto a = new VarAccesAST(name, p); a->tokens = tokens;
-    return a;
+    if (p == dynamic_cast<symbol::Variable*>(p))
+        ((symbol::Variable*)p)->used = true;
+    return share<AST>(new VarAccesAST(name, p, tokens));
 }
 
-void VarAccesAST::forceType(String type){
-    if (var->getCstType() != type){
-        parser::error("Type mismatch", tokens ,String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(), 17, "Caused by");
+void VarAccesAST::forceType(String type) {
+    if (var->getCstType() != type) {
+        parser::error("Type mismatch", tokens,
+                      String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(), 17,
+                      "Caused by");
     }
 }
 
-String VarAccesAST::emit_ll(int* locc, String inp){
-    String s = String("%") + std::to_string(++(*locc)) + " = load " + parser::LLType(var->getCstType()) + ", " + parser::LLType(var->getCstType()) + "* %" + var->getLLLoc() + ", align 8\n";
+String VarAccesAST::emitLL(int* locc, String inp) const {
+    String s = String("%") + std::to_string(++(*locc)) + " = load " + parser::LLType(var->getCstType()) + ", " +
+               parser::LLType(var->getCstType()) + "* " + var->getLLLoc() + ", align 8\n";
     inp = rinsert("%" + std::to_string(*locc), inp);
     return s + inp;
 }
 
-
-
-
-
-
-VarSetAST::VarSetAST(String name, symbol::Reference* sr, AST* expr){
-    this->name = name;
-    this->var  = sr;
-    this->expr = expr;
+VarSetAST::VarSetAST(String name, symbol::Reference* sr, sptr<AST> expr, std::vector<lexer::Token> tokens) {
+    this->name   = name;
+    this->var    = sr;
+    this->expr   = expr;
+    this->tokens = tokens;
 }
 
-AST* VarSetAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type){
-    if (tokens.size() == 0) return nullptr;
-    String name = "";
-    lexer::Token::Type last = lexer::Token::Type::SUBNS;
-    int split = parser::rsplitStack(tokens, {lexer::Token::Type::SET}, local);
-    if (split == 0){
-        parser::error("Expected Expression", {tokens[tokens.size()-1]}, "Expected an expression after '='", 31);
-        return new AST;
+sptr<AST> VarSetAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
+    if (tokens.size() == 0)
+        return nullptr;
+    String name  = "";
+    uint64 split = parser::rsplitStack(tokens, {lexer::Token::Type::SET}, local);
+    if (split == 0) {
+        parser::error("Expected Expression", {tokens[tokens.size() - 1]}, "Expected an expression after '='", 31);
+        return share<AST>(new AST);
     }
-    if (split == tokens.size()) return nullptr;
-    auto varname = parser::subvector(tokens, 0,1,split);
-    if (varname[0].type == lexer::Token::Type::SUBNS){
-        parser::error("Expected Symbol", {tokens[0]}, "module name or variable name expected", 30);
-        return new AST;
+    if (split == tokens.size())
+        return nullptr;
+    auto varname = parser::subvector(tokens, 0, 1, split);
+    name         = parse_name(varname);
+    if (name == "") {
+        parser::error("Expected Symbol", varname, "module name or variable name expected", 30);
+        return nullptr;
     }
-    for (lexer::Token t : varname){
-        if (last == lexer::Token::Type::SUBNS && t.type == lexer::Token::Type::ID){
-            name += t.value;
-        }
-        else if (last == lexer::Token::Type::ID && t.type == lexer::Token::Type::SUBNS){
-            name += "::";
-        }
-        else return nullptr;
-        last = t.type;
+
+    sptr<AST> expr = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr);
+    if (expr == nullptr) {
+        parser::error("Expected Expression", {tokens[tokens.size() - 1]}, "Expected a valid expression after '='", 31);
+        return share<AST>(new AST);
     }
-    if (last == lexer::Token::Type::SUBNS) parser::error("Expected Symbol", {varname[varname.size()-1]}, "module name or variable name expected", 30);
-    
-    AST* expr = math::parse(parser::subvector(tokens, split+1,1,tokens.size()), local, sr);
-    if (expr == nullptr){
-        parser::error("Expected Expression", {tokens[tokens.size()-1]}, "Expected a valid expression after '='", 31);
-        return new AST;
-    }
-    
-    String type = (*sr)[name].at(0)->getCstType();
-    if (type == ""){
+
+    if ((*sr)[name].size() == 0) {
         parser::error("Unknown variable", tokens, "A variable of this name was not found in this scope", 20);
-        return new AST;
+        return share<AST>(new AST);
     }
-    expr->forceType(type);
+
+    expr->forceType((*sr)[name][0]->getCstType());
     symbol::Reference* p = (*sr)[name].at(0);
-    return new VarSetAST(name, p, expr);
+    if (p == dynamic_cast<symbol::Variable*>(p) && ((symbol::Variable*)p)->isConst) {
+        parser::error("trying to set constant", tokens, "You are trying to set a variable which has a constant value.",
+                      17);
+        parser::note(p->tokens, "defined here:", 0);
+        return share<AST>(new AST);
+    }
+    return share<AST>(new VarSetAST(name, p, expr, tokens));
 }
 
-void VarSetAST::forceType(String type){
-    if (var->getCstType() != type){
-        if (var == dynamic_cast<symbol::Variable*>(var)) ((symbol::Variable*) var)->used = true;
-        parser::error("Type mismatch", tokens ,String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(), 17, "Caused by");
+void VarSetAST::forceType(String type) {
+    if (var->getCstType() != type) {
+        if (var == dynamic_cast<symbol::Variable*>(var))
+            ((symbol::Variable*)var)->used = false;
+        parser::error("Type mismatch", tokens,
+                      String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(), 17,
+                      "Caused by");
     }
 }
 
-String VarSetAST::emit_ll(int* locc, String inp){
-    String s = String("store ") + parser::LLType(var->getCstType()) + " {}, " + parser::LLType(var->getCstType()) + "* %" + name + "\n";
-    String l = expr->emit_ll(locc, s);
-    if (expr != dynamic_cast<LiteralAST*>(expr)) inp = rinsert(String("%") + std::to_string(*locc), inp);
-    else inp = expr->emit_ll(locc, inp);
+String VarSetAST::emitLL(int* locc, String inp) const {
+    String s = String("store ") + parser::LLType(var->getCstType()) + " {}, " + (as_optional ? " {"s : ""s) +
+               parser::LLType(var->getCstType()) + "* " + var->getLLLoc() + (as_optional ? ", i1 true }"s : ""s) +
+               ", align 8\n";
+    String l = expr->emitLL(locc, s);
+    if (instanceOf(expr, LiteralAST))
+        inp = rinsert(String("%") + std::to_string(*locc), inp);
+    else
+        inp = expr->emitLL(locc, inp);
 
     return l + inp;
 }

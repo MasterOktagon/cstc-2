@@ -11,26 +11,21 @@ String AST::_str(){
     return "<AST>";
 }
 
-LLType AST::getLLType(){
-    return "void";
+LLType AST::getLLType() const {
+    return "void"; // this should not break anything
 }
 
-CstType AST::getCstType(){
+CstType AST::getCstType() const {
     return "@unknown";
 }
 
 void AST::forceType(CstType){}
 
-bool AST::isConst(){
-    return false;
-}
+String AST::emitLL(int*, String s) const {return s;}
 
-String AST::emit_ll(int*, String s){return s;}
-
-String AST::emit_cst(){return "";}
+String AST::emitCST() const {return "";}
 
 String intab(String i){
-    //int j = 0;
     size_t pos = i.find('\n', 0);
     while (pos != String::npos){
         i.replace(pos, 1, "\n\t");

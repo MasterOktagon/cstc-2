@@ -9,36 +9,22 @@
 
 
 class FuncCallAST : public ExpressionAST {
-    std::string name;
+    String name;
     symbol::Function* fn = nullptr;
-    std::vector<AST*> params;
+    std::vector<sptr<AST>> params;
 
     public:
-    FuncCallAST(std::string name, std::vector<AST*> params, symbol::Function* f){this->name=name; this->params=params; this->fn = f;}
+    FuncCallAST(std::string name, std::vector<sptr<AST>> params, symbol::Function* f){this->name=name; this->params=params; this->fn = f;}
     virtual bool isConst(){return false;} // do constant folding or not
-    virtual ~FuncCallAST(){}
-    virtual std::string emit_ll(int* locc, std::string inp);
-    /*
-        Emit llvm IR code in human-readable form
+    virtual ~FuncCallAST(){};
 
-        [param locc] local variable name counter
-    */
-    //virtual llvm::Value* codegen(){return nullptr;}
-    /*
-        Emit llvm-bitcode to be compiled later
-    */
+    virtual String emitLL(int* locc, std::string inp) const;
 
-    virtual std::string emit_cst();
-    /*
-        Emit C* code
-    */
+    virtual String emitCST() const;
     
-    virtual std::string getCstType(){return fn->getCstType();}
-    virtual std::string getLLType(){return "";}
-    virtual void forceType(std::string type){}
-    /*
-        Try to enforce a specific type
-    */
-
-    static AST* parse(std::vector<lexer::Token>, int local, symbol::Namespace* sr, std::string expected_type="@unknown");
+    virtual CstType getCstType() const {return fn->getCstType();}
+    virtual LLType getLLType() const {return "";}
+    virtual void forceType(String){}
+    
+    static sptr<AST> parse(PARSER_FN);
 };

@@ -52,6 +52,10 @@ int32 main(int32 argc, const char** argv){
         .scan<'d', int32>()
         .default_value<int32>(100)
     ;
+    argparser.add_argument("--no-std-lang")
+        .help("disable autoloading std::lang module")
+        .flag()
+    ;
 
     // try to parse arguments
     try {
@@ -87,7 +91,8 @@ int32 main(int32 argc, const char** argv){
     }
     // Load the main module (which autoloads all necessary modules)
     std::cout << "Fetching modules: (" << 0 << "/?)";
-    Module::create("lang", "", "", true);
+    if (argparser["--no-std-lang"] == false)
+        Module::create("lang", "", "", true);
     Module::create(main_file, std::fs::current_path().string(), "", false, {}, true, true);
 
     // sort modules for parsing

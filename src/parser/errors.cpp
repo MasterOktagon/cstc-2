@@ -16,8 +16,10 @@ uint64 parser::warnc = 0;
 bool parser::one_error = false;
 
 void parser::showError(String errstr, String errcol, String errcol_lite, String name, String msg, std::vector<lexer::Token> tokens, uint32 code, String appendix){
-    if (tokens.size() == 0) return;
-
+    if (tokens.size() == 0) {
+        std::cerr << "OH NO! Error could not be displayed\n";
+        return;
+    }
     String location;
     if (tokens.size() == 1){
         location = ":"s + std::to_string(tokens[0].l) + ":" + std::to_string(tokens[0].c); 
@@ -64,5 +66,18 @@ void parser::warn(String name, std::vector<lexer::Token> tokens, String msg, uin
 }
 void parser::note(std::vector<lexer::Token> tokens, String msg, uint32 code, String appendix){
     showError("NOTE", "\e[1;36m", "\e[36m", "", msg, tokens, code, appendix);
+}
+
+void parser::noteInsert(String msg, lexer::Token after, String insert, uint32 code, String appendix){
+
+    String location;
+    location = ":"s + std::to_string(after.l) + ":" + std::to_string(after.c); 
+
+    std::cerr << "\r" << "\e[1;36mNote" << ": " << "\e[0m @ \e[0m" << after.filename << "\e[1m" << location << "\e[0m" << (code == 0? ""s : " [N"s + std::to_string(code) + "]") << ":" << std::endl;
+    std::cerr << msg << std::endl;
+    std::cerr << "      | " << std::endl;
+    std::cerr << " " << fillup(std::to_string(after.l), 4) << " | " << (*(after.line_contents)).insert(*(after.line_contents)->begin() + after.c + after.value.size(), "\e[36m"s + insert + "\e[0m") << std::endl;
+    std::cerr << "      | " << std::endl;
+    std::cerr << appendix << std::endl;
 }
 

@@ -42,6 +42,8 @@ This could be due to a missing file parameter or a multiple of them since `cstc`
 |E51     | Block open expected | A '{' was expected |
 |E52     | Block close expected | A '}' was expected |
 |E60     | Namespace not allowed | A Block of type Namespace was not allowed here |
+|E75     | Unexpected import   | An 'import' token was detected inside a statement |
+|E76     | Unexpected Token     | An unexpected Token was encoutered |
 
 
 ## Compiler-Warncodes
@@ -60,3 +62,4 @@ This could be due to a missing file parameter or a multiple of them since `cstc`
 |W14     | Line too long       | Triggers if the line length is bigger than 120 |
 |W15     | `std::threads` not imported | Triggers if you use the `locked` keyword without `std::threads` imported |
 |W16     | Wrong casing        | The compiler expects a different casing on this symbol |
+|E17     | Integer to big      | Trying to fit an integer too big into a variable with too few bits. this will lead to information loss. |

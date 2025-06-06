@@ -10,7 +10,7 @@
 #include "symboltable.hpp"
 #include <iostream>
 
-#define DEBUG
+//#define DEBUG
 
 #define INT_OPS(type)                                                       \
     if (type1 == type){                                                     \
@@ -41,6 +41,11 @@
 
 String parser::hasOp(String type1, String type2, lexer::Token::Type op){
     if(type1 == "@unknown" || type2 == "@unknown") return "@unknown";
+
+    if (type2 == type1 + '?' && op == lexer::Token::Type::AS){
+        return type2;
+    }
+
     std::regex int_regex("u?int(8|16|32|64|128)");
     //std::regex float_regex("u?int(8|16|32|64|128)");
     if (type1 == "bool"){
@@ -91,7 +96,7 @@ String match_token_clamp(lexer::Token::Type t){
     }
 }
 
-int parser::splitStack(std::vector<lexer::Token> t, std::initializer_list<lexer::Token::Type> delimiter, int, std::initializer_list<lexer::Token::Type>){
+uint64 parser::splitStack(std::vector<lexer::Token> t, std::initializer_list<lexer::Token::Type> delimiter, int, std::initializer_list<lexer::Token::Type>){
     std::stack<lexer::Token> s = {};
 
     uint64 i;
@@ -128,7 +133,7 @@ int parser::splitStack(std::vector<lexer::Token> t, std::initializer_list<lexer:
     return i;
 }
 
-int parser::rsplitStack(std::vector<lexer::Token> t, std::initializer_list<lexer::Token::Type> delimiter, int, std::initializer_list<lexer::Token::Type>){
+uint64 parser::rsplitStack(std::vector<lexer::Token> t, std::initializer_list<lexer::Token::Type> delimiter, int, std::initializer_list<lexer::Token::Type>){
     std::stack<lexer::Token> s = {};
 
     uint64 i;
@@ -165,12 +170,12 @@ int parser::rsplitStack(std::vector<lexer::Token> t, std::initializer_list<lexer
     return i;
 }
 
-AST* parser::parseOneOf(std::vector<lexer::Token> tokens, std::vector<fsignal<AST*, std::vector<lexer::Token>, int, symbol::Namespace*, String>> functions, int local, symbol::Namespace* sr, String expected_type){
+sptr<AST> parser::parseOneOf(std::vector<lexer::Token> tokens, std::vector<PARSER_FN_NO_DEFAULT> functions, int local, symbol::Namespace* sr, String expected_type){
     for (auto fn : functions){
-        AST* r = fn(tokens, local, sr, expected_type);
+        sptr<AST> r = fn(tokens, local, sr, expected_type);
         if (r != nullptr){
             #ifdef DEBUG
-                std::cout << "parse_one_of: " << r->emit_cst()  << std::endl;
+                std::cout << "parse_one_of: " << r->emitCST()  << std::endl;
             #endif
             return r;
         }
@@ -221,6 +226,7 @@ bool parser::isAtomic(String type){
     if(type == "float128") return true;
     if(type[type.size()-1] == '*') return true;
     if(type[type.size()-1] == '&') return true;
+    if(type[type.size()-1] == '?') return true;
     return false;
 }
 
@@ -245,7 +251,7 @@ bool parser::IS_UPPER_CASE(String text){
     return std::regex_match(text.c_str(), m, rx);
 }
 
-LLType parser::LLType(CstType name){
+LLType parser::LLType(CstType name, symbol::Reference* sr){
     if (name == "int8") return "i8";
     if (name == "int16") return "i16";
     if (name == "int32") return "i32";
@@ -263,5 +269,30 @@ LLType parser::LLType(CstType name){
     if (name == "char") return "i16";
     if (name == "bool") return "i1";
 
+    if(name[name.size()-1] == '?') return "{ "s + LLType(name.substr(0, name.size()-1)) + " , i1 }";
+
+    if (sr != nullptr){
+        if ((*sr)[name].size() > 0){
+            return (*sr)[name][0]->getLLType();
+        }
+    }
+
     return name;
+}
+
+parser::Modifier parser::getModifier(std::vector<lexer::Token>& tokens){
+    Modifier m = Modifier::NONE;
+
+    uint64 i;
+    for (i=0; i<tokens.size(); i++){
+        if (tokens.at(i).type == lexer::Token::Type::CONST)
+            m = Modifier(m | Modifier::CONST);
+        else break;
+    }
+    #ifdef DEBUG
+        std::cout << "parser::getModifier: " << i << "/" << tokens.size() << std::endl;
+    #endif
+    if (i == tokens.size()) tokens = {};
+    else if (tokens.size() > 0) tokens = parser::subvector(tokens, i,1,tokens.size());
+    return m;
 }

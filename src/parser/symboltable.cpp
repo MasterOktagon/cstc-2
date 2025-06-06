@@ -8,6 +8,7 @@
 
 void symbol::Namespace::add(String loc, symbol::Reference* sr){
     size pos = loc.find("::");
+    sr->parent = this;
     if (pos != String::npos && loc.substr(0,pos) != ""){
         contents.at(loc.substr(0,pos))[0]->add(loc.substr(pos+2), sr);
     }
@@ -63,7 +64,9 @@ std::vector<symbol::Reference*> symbol::Namespace::operator[] (String subloc){
             result = (*((Namespace*) contents[head][0]))[tail];
         }
     }
-
+    if (result.size() == 0 && import_from.count(subloc) > 0) {
+        result = (*this)[import_from[subloc]];
+    }
     for (uint64 i=0; result.size() == 0 && i < include.size(); i++){
         result = (*include.at(i))[subloc];
     }

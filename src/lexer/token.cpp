@@ -62,6 +62,7 @@ String lexer::getTokenName(lexer::Token::Type type){
         tokenToSTR(ACCESS)
         tokenToSTR(COMMA)
         tokenToSTR(DOTDOT)
+        tokenToSTR(DOTDOTDOT)
 
         tokenToSTR(OPEN)
         tokenToSTR(CLOSE)
@@ -117,4 +118,8 @@ lexer::Token::Token(lexer::Token::Type t, String content, uint64 l, uint64 c, St
 }
 
 lexer::Token::~Token() = default;
+
+bool lexer::Token::operator==(Token& other) {
+    return type == other.type && value == other.value;
+}
 
