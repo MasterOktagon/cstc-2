@@ -11,10 +11,10 @@ class VarDeclAST : public AST {
 
     String name = "";
     sptr<AST> type = nullptr;
-    symbol::Reference* v=nullptr;
+    symbol::Variable* v=nullptr;
 
     public:
-    VarDeclAST(String name, sptr<AST> type, symbol::Reference* v);
+    VarDeclAST(String name, sptr<AST> type, symbol::Variable* v);
     virtual bool isConst() const {return false;} // do constant folding or not
     virtual ~VarDeclAST(){};
     virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
@@ -32,11 +32,11 @@ class VarInitlAST : public AST {
     String name = "";
     sptr<AST> type = nullptr;
     sptr<AST> expression = nullptr;
-    symbol::Reference* v=nullptr;
+    symbol::Variable* v=nullptr;
     bool as_optional = false;
 
     public:
-    VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Reference* v, std::vector<lexer::Token> tokens);
+    VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v, std::vector<lexer::Token> tokens);
     virtual bool isConst(){return false;} // do constant folding or not
     virtual ~VarInitlAST(){};
     virtual uint64 nodeSize() const {return expression->nodeSize() + 1;} // how many nodes to to do
@@ -53,10 +53,10 @@ class VarInitlAST : public AST {
 
 class VarAccesAST : public AST {
     String name = "";
-    symbol::Reference* var = nullptr;
+    symbol::Variable* var = nullptr;
 
     public:
-    VarAccesAST(String name, symbol::Reference* sr, std::vector<lexer::Token> tokens);
+    VarAccesAST(String name, symbol::Variable* sr, std::vector<lexer::Token> tokens);
     virtual bool isConst(){return false;} // do constant folding or not
     virtual ~VarAccesAST(){}
     virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
@@ -72,12 +72,12 @@ class VarAccesAST : public AST {
 
 class VarSetAST : public ExpressionAST {
     String name = "";
-    symbol::Reference* var = nullptr;
+    symbol::Variable* var = nullptr;
     sptr<AST> expr = nullptr;
     bool as_optional = false;
 
     public:
-    VarSetAST(String name, symbol::Reference* sr, sptr<AST> expr, std::vector<lexer::Token> tokens);
+    VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, std::vector<lexer::Token> tokens);
     virtual bool isConst(){return false;} // do constant folding or not
     virtual ~VarSetAST(){};
     virtual uint64 nodeSize() const {return expr->nodeSize() + 1;} // how many nodes to to do

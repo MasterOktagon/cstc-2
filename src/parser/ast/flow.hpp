@@ -14,6 +14,7 @@
 class SubBlockAST : public AST {
     public:
     std::vector<sptr<AST>> contents = {}; //> block comments
+    symbol::Namespace* parent = nullptr;
 
     SubBlockAST(){}
     virtual ~SubBlockAST() {}

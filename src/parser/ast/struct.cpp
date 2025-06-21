@@ -8,6 +8,7 @@
 #include "../../snippets.h"
 #include "ast.hpp"
 #include <cerrno>
+#include <iostream>
 #include "struct.hpp"
 #include "../parser.hpp"
 #include "../errors.hpp"
@@ -53,12 +54,19 @@ sptr<AST> EnumAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Na
 
             // TODO
 
+            if (!parser::IsCamelCase(name)){
+                parser::warn("Wrong casing", {tokens.at(1)}, "Enum name should be CamelCase.", 16);
+            }
+
+            sr->add(name, new symbol::Enum(name));
+            return share<AST>(new EnumAST(name, tokens));
+
         }
         else {
             parser::error("Identifier expected", {tokens[1]}, "Expected an identifier after 'enum'", 50);
             return share<AST>(new AST);
         }
-        
+
     }
     return nullptr;
 }

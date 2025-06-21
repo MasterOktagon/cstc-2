@@ -22,6 +22,7 @@ namespace symbol {
 
         public:
         std::vector<lexer::Token> tokens = {};
+        std::vector<lexer::Token> last = {};
         Reference* parent = nullptr;
 
         virtual ~Reference();
@@ -54,11 +55,19 @@ namespace symbol {
         String name;
 
         public:
+
+        enum Status {
+            UNINITIALIZED = 0,
+            PROVIDED = 1,
+            CONSUMED = 2,
+        };
+
         bool isConst = false;
         bool isFinal = false;
-        bool used = false;
+        Status used = UNINITIALIZED;
+        bool isFree = false;
         Variable(String name, LLType type, std::vector<lexer::Token> tokens, symbol::Reference* parent) : type(std::move(type)), name(name)
-            {loc = name; this->tokens = std::move(tokens); this->parent=parent;}
+            {loc = name; this->tokens = tokens; last=tokens; this->parent=parent;}
         virtual ~Variable(){};
         virtual String _str() {
             return "symbol::Variable "s + getLoc();
@@ -215,7 +224,7 @@ namespace symbol {
             ALLOWS_ENUMS = true;
             ALLOWS_SUBCLASSES = false;
         }
-        Enum() = default;
+        Enum(String name) {loc=name;}
     };
 
     class EnumGroup : public Enum {

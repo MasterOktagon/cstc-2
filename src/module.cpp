@@ -11,6 +11,7 @@
 #include "lexer/token.hpp"
 #include "parser/ast/ast.hpp"
 #include "parser/ast/flow.hpp"
+#include "parser/errors.hpp"
 #include "parser/symboltable.hpp"
 #include "snippets.h"
 #include <algorithm>
@@ -389,7 +390,15 @@ void Module::parse(){
     }
     // check variables for usage
     for (std::pair<String, std::vector<symbol::Reference*>> sr : contents){
-    
+        if (sr.second.at(0) == dynamic_cast<symbol::Variable*>(sr.second.at(0))){
+            auto var = (symbol::Variable*) sr.second.at(0);
+            if (var->used == symbol::Variable::PROVIDED){
+                parser::warn("Unconsumed Variable", var->last, "This variable was provided, but never consumed", 0);
+            }
+            if (var->used == symbol::Variable::UNINITIALIZED){
+                parser::warn("Unused Variable", var->tokens, "This variable was declared, but never used", 0);
+            }
+        }
     }
     std::cout << "\rParsing modules (" << ++parsed_modules << "/" << Module::modules.size() << ")";
 }

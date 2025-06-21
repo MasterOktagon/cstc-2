@@ -124,7 +124,8 @@ namespace lexer {
             CONST     ,
             NAMESPACE ,
             NEW       ,
-            FINALLY
+            FINALLY   ,
+            DELETE   
         };
 
         Type type;     //> this tokens type

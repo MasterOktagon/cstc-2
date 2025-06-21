@@ -43,7 +43,7 @@ sptr<AST> parseStatement(std::vector<lexer::Token> tokens, int local, symbol::Na
     return math::parse(parser::subvector(tokens, 0, 1, tokens.size() - 1), local, sr, expected_type);
 }
 
-VarDeclAST::VarDeclAST(String name, sptr<AST> type, symbol::Reference* v) {
+VarDeclAST::VarDeclAST(String name, sptr<AST> type, symbol::Variable* v) {
     this->name = name;
     this->type = type;
     this->v    = v;
@@ -85,9 +85,12 @@ sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol:
                     return sptr<AST>(new AST);
                 }
 
-                auto v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
+                symbol::Variable* v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
                 v->isConst = m & parser::Modifier::CONST;
                 sr->add(name, v);
+                if (parser::isAtomic(type->getCstType())){
+                    v->isFree = true;
+                }
                 return sptr<AST>(new VarDeclAST(name, type, v));
             }
         }
@@ -97,7 +100,7 @@ sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol:
 
 String VarDeclAST::emitLL(int*, String) const { return v->getLLLoc() + " = alloca " + type->getLLType() + "\n"; }
 
-VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Reference* v,
+VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v,
                          std::vector<lexer::Token> tokens) {
     this->name       = name;
     this->type       = type;
@@ -157,6 +160,11 @@ sptr<AST> VarInitlAST::parse(std::vector<lexer::Token> tokens, int local, symbol
             auto v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
             v->isConst = m & parser::Modifier::CONST;
             sr->add(name, v);
+            if (parser::isAtomic(type->getCstType())){
+                v->isFree = true;
+            }
+            v->used = symbol::Variable::PROVIDED;
+            
             return share<AST>(new VarInitlAST(name, type, expr, v, tokens));
         }
     }
@@ -170,7 +178,7 @@ String VarInitlAST::emitLL(int* locc, String) const {
     return l;
 }
 
-VarAccesAST::VarAccesAST(String name, symbol::Reference* sr, std::vector<lexer::Token> tokens) {
+VarAccesAST::VarAccesAST(String name, symbol::Variable* sr, std::vector<lexer::Token> tokens) {
     this->name   = name;
     this->var    = sr;
     this->tokens = tokens;
@@ -190,9 +198,22 @@ sptr<AST> VarAccesAST::parse(std::vector<lexer::Token> tokens, int, symbol::Name
     }
 
     symbol::Reference* p = (*sr)[name].at(0);
-    if (p == dynamic_cast<symbol::Variable*>(p))
-        ((symbol::Variable*)p)->used = true;
-    return share<AST>(new VarAccesAST(name, p, tokens));
+    if (p == dynamic_cast<symbol::Variable*>(p)){
+        symbol::Variable::Status& u = ((symbol::Variable*) p)->used;
+        if (u == symbol::Variable::UNINITIALIZED){
+            parser::error("Variable uninitilialized", tokens, "Variable '\e[1m"s + name + "\e[0m' is uninitilialized at this point.\nMake sure the variable holds a value to resolve.", 0);
+            parser::note(p->tokens, "declared here", 0);
+            return share<AST>(new AST);
+        }
+        else if (u == symbol::Variable::CONSUMED && !((symbol::Variable*) p)->isFree) {
+            parser::error("Type linearity violated", tokens, "Variable '\e[1m"s + name + "\e[0m' is consumed at this point.\nMake sure the variable holds a value to resolve.", 0, "");
+            parser::note(p->last, "last consume here", 0);
+            return share<AST>(new AST);
+        }
+        u = symbol::Variable::CONSUMED;
+        p->last = tokens;
+    }
+    return share<AST>(new VarAccesAST(name, (symbol::Variable*) p, tokens));
 }
 
 void VarAccesAST::forceType(String type) {
@@ -210,7 +231,7 @@ String VarAccesAST::emitLL(int* locc, String inp) const {
     return s + inp;
 }
 
-VarSetAST::VarSetAST(String name, symbol::Reference* sr, sptr<AST> expr, std::vector<lexer::Token> tokens) {
+VarSetAST::VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, std::vector<lexer::Token> tokens) {
     this->name   = name;
     this->var    = sr;
     this->expr   = expr;
@@ -254,13 +275,26 @@ sptr<AST> VarSetAST::parse(std::vector<lexer::Token> tokens, int local, symbol::
         parser::note(p->tokens, "defined here:", 0);
         return share<AST>(new AST);
     }
-    return share<AST>(new VarSetAST(name, p, expr, tokens));
+    if (p == dynamic_cast<symbol::Variable*>(p)){
+        symbol::Variable::Status& u = ((symbol::Variable*) p)->used;
+        if (u == symbol::Variable::PROVIDED) {
+            auto warn_error = parser::error;
+            if (((symbol::Variable*) p)->isFree){
+                warn_error = parser::warn;
+            }
+
+            warn_error("Type linearity violated", tokens, "Variable '\e[1m"s + name + "\e[0m' was never consumed.\nMake sure the variable is consumed before it is provided.", 0, "");
+            parser::note(p->last, "last provided here", 0);
+            return share<AST>(new AST);
+        }
+        u = symbol::Variable::PROVIDED;
+        p->last = tokens;
+    }
+    return share<AST>(new VarSetAST(name, (symbol::Variable*) p, expr, tokens));
 }
 
 void VarSetAST::forceType(String type) {
     if (var->getCstType() != type) {
-        if (var == dynamic_cast<symbol::Variable*>(var))
-            ((symbol::Variable*)var)->used = false;
         parser::error("Type mismatch", tokens,
                       String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(), 17,
                       "Caused by");

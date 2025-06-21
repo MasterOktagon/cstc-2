@@ -65,16 +65,19 @@ class EnumAST : public AST {
     }
 
     public:
-    EnumAST(String name, std::vector<lexer::Token> tokens={});
+    EnumAST(String name, std::vector<lexer::Token> tokens={}){
+        this->name = name;
+        this->tokens = tokens;
+    }
     virtual ~EnumAST(){};
     String getCstType() const {return "void"; /* enum definiton is void*/}
     String getLLType() const {return "";}
     String getValue(){return "";}
     virtual uint64 nodeSize() const {return enu->contents.size() + 1;}
-    virtual String emitLL(int*, String) const;
-    String emit_cst() const;
+    virtual String emitLL(int*, String s) const {return s;};
+    String emit_cst() const {return "";};
 
-    virtual void forceType(String type);
+    virtual void forceType(String type){};
 
     static sptr<AST> parse(PARSER_FN);
 };

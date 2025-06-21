@@ -10,6 +10,7 @@
 #include "../parser.hpp"
 #include "import.hpp"
 #include "namespace.hpp"
+#include "struct.hpp"
 #include "var.hpp"
 #include "../errors.hpp"
 
@@ -47,7 +48,7 @@ sptr<AST> SubBlockAST::parse(std::vector<lexer::Token> tokens, int local, symbol
             sptr<AST> expr = parser::parseOneOf(
                 buffer, {
                             NamespaceAST::parse, VarInitlAST::parse,
-                            VarDeclAST::parse, parseStatement,
+                            VarDeclAST::parse, parseStatement, EnumAST::parse,
                             ImportAST::parse
                         }, local, sr, "void");
 

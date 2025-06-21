@@ -99,6 +99,8 @@ String lexer::getTokenName(lexer::Token::Type type){
         tokenToSTR(CONST)
         tokenToSTR(NAMESPACE)
         tokenToSTR(ABSTRACT)
+        tokenToSTR(FINALLY)
+        tokenToSTR(DELETE)
 
         default: return "UNKNOWN";
     }

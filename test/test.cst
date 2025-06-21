@@ -1,9 +1,11 @@
-
+uint8 c;
+uint8 d;
 uint8 a = uint8::MIN_VALUE;
 uint8? b;
 b = a as uint8?;
 a = b?;
+c = d = a;
 
-//enum TEST {
-//    
-//}
+enum Test {
+    
+}

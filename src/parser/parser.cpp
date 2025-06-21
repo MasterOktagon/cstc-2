@@ -224,9 +224,9 @@ bool parser::isAtomic(String type){
     if(type == "float32") return true;
     if(type == "float64") return true;
     if(type == "float128") return true;
-    if(type[type.size()-1] == '*') return true;
-    if(type[type.size()-1] == '&') return true;
-    if(type[type.size()-1] == '?') return true;
+    //if(type[type.size()-1] == '*') return true;
+    //if(type[type.size()-1] == '&') return true;
+    //if(type[type.size()-1] == '?') return true;
     return false;
 }
 
