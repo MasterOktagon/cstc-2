@@ -294,7 +294,7 @@ class AndAST : public DoubleOperandAST {
 class NotAST : public UnaryOperandAST {
     public:
     NotAST(sptr<AST> inner, std::vector<lexer::Token> tokens);
-    virtual ~NotAST();
+    virtual ~NotAST() = default;
 
     // fwd declarations. @see @class AST 
 
@@ -317,7 +317,7 @@ class NotAST : public UnaryOperandAST {
 class NegAST : public UnaryOperandAST {
     public:
     NegAST(sptr<AST> inner, std::vector<lexer::Token> tokens);
-    virtual ~NegAST();
+    virtual ~NegAST() = default;
 
     // fwd declarations. @see @class AST 
 

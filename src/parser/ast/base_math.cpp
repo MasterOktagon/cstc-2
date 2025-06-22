@@ -584,6 +584,91 @@ void LandAST::forceType(String type) {
                       left->getCstType() + "::operator && (" + right->getCstType() + ") is not implemented.", 18);
 }
 
+// NotAST
+
+NotAST::NotAST(sptr<AST> inner, std::vector<lexer::Token> tokens) {
+    this->left   = inner;
+    this->tokens = tokens;
+    this->op     = lexer::Token::NOT;
+}
+
+void NotAST::forceType(String type) {
+
+    String ret = parser::hasOp(left->getCstType(), left->getCstType(), op);
+    if (ret != "") {
+        if (ret != type)
+            parser::error("Mismatiching types", tokens,
+                          left->getCstType() + "::operator ! () yields " + ret +
+                              " (expected \e[1m" + type + "\e[0m)",
+                          18);
+    } else
+        parser::error("Unknown operator", tokens,
+                      left->getCstType() + "::operator ! () is not implemented.", 18);
+}
+
+sptr<AST> NotAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
+    if (tokens.size() == 0)
+        return nullptr;
+    if (tokens.at(0).type == lexer::Token::NOT) {
+        sptr<AST> of = math::parse(parser::subvector(tokens, 1, 1, tokens.size()), local, sr);
+        if (of == nullptr) {
+            parser::error("Expression expected", {tokens[0]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m after '!'", 111);
+            return share<AST>(new AST);
+        }
+        return share<NotAST>(new NotAST(of, tokens));
+    }
+
+    return nullptr;
+}
+
+String NotAST::emitCST() const {
+    return "!"s+left->emitCST();
+}
+
+// NegAST
+
+NegAST::NegAST(sptr<AST> inner, std::vector<lexer::Token> tokens) {
+    this->left   = inner;
+    this->tokens = tokens;
+    this->op     = lexer::Token::NEG;
+}
+
+void NegAST::forceType(String type) {
+
+    String ret = parser::hasOp(left->getCstType(), left->getCstType(), op);
+    if (ret != "") {
+        if (ret != type)
+            parser::error("Mismatiching types", tokens,
+                          left->getCstType() + "::operator ~ () yields " + ret +
+                              " (expected \e[1m" + type + "\e[0m)",
+                          18);
+    } else
+        parser::error("Unknown operator", tokens,
+                      left->getCstType() + "::operator ~ () is not implemented.", 18);
+}
+
+sptr<AST> NegAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
+    if (tokens.size() == 0)
+        return nullptr;
+    if (tokens.at(0).type == lexer::Token::NEG) {
+        sptr<AST> of = math::parse(parser::subvector(tokens, 1, 1, tokens.size()), local, sr);
+        if (of == nullptr) {
+            parser::error("Expression expected", {tokens[0]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m after '~'", 111);
+            return share<AST>(new AST);
+        }
+        return share<NotAST>(new NotAST(of, tokens));
+    }
+
+    return nullptr;
+}
+
+String NegAST::emitCST() const {
+    return "~"s+left->emitCST();
+}
+
+
 // AddrOfAST
 
 AddrOfAST::AddrOfAST(sptr<AST> of) { this->of = of; }
