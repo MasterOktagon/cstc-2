@@ -11,9 +11,7 @@
 #include "../lexer/token.hpp"
 #include "ast/ast.hpp"
 #include "symboltable.hpp"
-
-template <typename T, typename ... K>
-using fsignal = T (*) (K ... );
+#include "../snippets.h"
 
 /**
  * @namespace implementing parser infrastructure
@@ -85,7 +83,8 @@ namespace parser {
      */
     enum Modifier {
         NONE  = 0,
-        CONST = 1
+        CONST = 1,
+        MUTABLE = 2
     };
 
     /**

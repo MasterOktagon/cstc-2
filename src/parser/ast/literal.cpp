@@ -98,7 +98,7 @@ void IntLiteralAST::forceType(String type) {
         parser::error("Type mismatch", tokens, "expected a \e[1m"s + type + "\e[0m, found int", 17, "Caused by");
 }
 
-BoolLiteralAST::BoolLiteralAST(bool value, std::vector<lexer::Token> tokens) {
+BoolLiteralAST::BoolLiteralAST(String value, std::vector<lexer::Token> tokens) {
     this->value  = value;
     this->tokens = tokens;
     is_const     = true;
@@ -106,11 +106,11 @@ BoolLiteralAST::BoolLiteralAST(bool value, std::vector<lexer::Token> tokens) {
 
 String BoolLiteralAST::emitLL(int*, String inp) const { return rinsert(getValue(), inp); }
 
-String    BoolLiteralAST::emitCST() const { return value ? "true" : "false"; }
+String    BoolLiteralAST::emitCST() const { return value; }
 sptr<AST> BoolLiteralAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace*, String) {
     if (tokens.size() == 1) {
         if (tokens[0].value == "true" || tokens[0].value == "false") {
-            return share<AST>(new BoolLiteralAST(tokens[0].value == "true", tokens));
+            return share<AST>(new BoolLiteralAST(tokens[0].value, tokens));
         }
     }
     return nullptr;

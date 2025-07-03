@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 #define share std::shared_ptr
 #define unify std::unique_ptr
 
@@ -48,6 +49,9 @@ std::vector<T> subvector(std::vector<T> v, int start, int, int stop){
     return std::vector<T>(s, end);
 }
 
+template <typename T, typename ... K>
+using fsignal = T (*) (K ... );
+
 class Repr{
     friend String str(Repr*);
 
@@ -56,7 +60,7 @@ class Repr{
         virtual ~Repr(){};
 
     protected:
-        virtual String _str(){return "Repr"s;};
+        virtual String _str() const {return "Repr"s;};
 };
 
 #include <sstream>
@@ -113,6 +117,12 @@ class SegFException : public Exception {
     }
 };
 
-#define instanceOf(el,of) ((of*) el.get() == dynamic_cast<of*>(el.get()))
+#define instanceOf(el, of) ((of*)el.get() == dynamic_cast<of*>(el.get()))
+#define cast2 (a, to) (dynamic_pointer_cast<to>(a))
+
+template< typename T, typename T2 >
+inline std::pair<T,T2> operator , (T& t, T2& t2){
+    return std::make_pair(t,t2);
+}
 
 

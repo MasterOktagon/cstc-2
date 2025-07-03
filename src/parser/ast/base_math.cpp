@@ -3,34 +3,126 @@
 #include "../errors.hpp"
 #include "../parser.hpp"
 #include "../symboltable.hpp"
+#include "../../build/optimizer_flags.hpp"
 #include "ast.hpp"
 #include "func.hpp"
 #include "literal.hpp"
 #include "type.hpp"
 #include "var.hpp"
 #include <iostream>
+#include <map>
 #include <regex>
 #include <string>
 #include <tuple>
 #include <vector>
+#include <cmath>
 
 // #define DEBUG
 
 CstType DoubleOperandAST::getCstType() const { return parser::hasOp(left->getCstType(), right->getCstType(), op); }
 LLType  DoubleOperandAST::getLLType() const { return parser::LLType(getCstType()); }
 uint64  DoubleOperandAST::nodeSize() const { return left->nodeSize() + right->nodeSize() + 1; }
+String  DoubleOperandAST::_str() const {
+    return "<"s + str(left.get()) + op_view + str(right.get()) + (is_const ? " [="s + value + "]>" : ">"s );
+}
+String DoubleOperandAST::emitCST() const {
+    return "("s + left->emitCST() + " " + op_view + " " + right->emitCST() + ")";
+}
+void DoubleOperandAST::forceType(CstType type) {
+    std::regex i("u?int(8|16|32|64|128)");
+    std::regex f("float(16|32|64|128)");
+    bool       int_required   = std::regex_match(type, i);
+    bool       float_required = std::regex_match(type, f);
+
+    // force the types of the sub-trees
+    if (std::regex_match(left->getCstType(), i) && int_required) {
+        left->forceType(type);
+        right->forceType(type);
+    }
+    if (std::regex_match(left->getCstType(), f) && float_required) {
+        left->forceType(type);
+        right->forceType(type);
+    }
+
+    // check for operator overloading [WIP/TODO]
+    CstType ret = parser::hasOp(left->getCstType(), right->getCstType(), op);
+    if (ret != "") {
+        if (ret != type)
+            parser::error("Mismatiching types", tokens,
+                          left->getCstType() + "::operator " + op_view + " (" + right->getCstType() + ") yields " +
+                              ret + " (expected \e[1m" + type + "\e[0m)",
+                          18);
+
+        else if (optimizer::do_constant_folding && right->is_const && left->is_const) {
+            //std::cout << op_view << "constant_folding" << std::endl;
+            if (const_folding_fn.count(std::make_tuple(left->getCstType(),right->getCstType()))) {
+                value = const_folding_fn[std::make_tuple(left->getCstType(),right->getCstType())](left->value,right->value);
+                is_const = true;
+            }
+        }
+    } else
+        parser::error("Unknown operator", tokens,
+                      left->getCstType() + "::operator " + op_view + " (" + right->getCstType() + ") is not implemented.", 18);
+}
 
 CstType UnaryOperandAST::getCstType() const { return parser::hasOp(left->getCstType(), left->getCstType(), op); }
 LLType  UnaryOperandAST::getLLType() const { return parser::LLType(getCstType()); }
 uint64  UnaryOperandAST::nodeSize() const { return left->nodeSize() + 1; }
+void    UnaryOperandAST::forceType(CstType type) {
+
+    String ret = parser::hasOp(left->getCstType(), left->getCstType(), op);
+    if (ret != "") {
+        if (ret != type)
+            parser::error("Mismatiching types", tokens,
+                          left->getCstType() + "::operator " + op_view + " () yields " + ret + " (expected \e[1m" +
+                              type + "\e[0m)",
+                          18);
+
+        else if (optimizer::do_constant_folding && left->is_const) {
+            if (const_folding_fn.count(left->getCstType())) {
+                value = const_folding_fn[left->getCstType()](left->value);
+                is_const = true;
+            }
+        }
+    } else
+        parser::error("Unknown operator", tokens,
+                      left->getCstType() + "::operator " + op_view + " () is not implemented.", 18);
+}
+
+String UnaryOperandAST::emitCST() const { return op_view + left->emitCST(); }
+
+String UnaryOperandAST::_str() const {
+    return "<"s + op_view + str(left.get()) + (is_const ? " [="s + value + "]>" : ">"s );
+}
 
 //  AddAST
 
+#define CF_FUN_INT(type1, type2, type, op) {std::make_tuple(type1, type2), nlambda (String v1, String v2) {return std::to_string(type(std::stoll(v1) op std::stoll(v2)));} }
+#define CF_FUN_FLT(type1, type2, type, op) {std::make_tuple(type1, type2), nlambda (String v1, String v2) {return std::to_string(type(std::stold(v1) op std::stold(v2)));} }
+
+
 AddAST::AddAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::ADD;
+    this->left    = left;
+    this->right   = right;
+    this->tokens  = tokens;
+    this->op      = lexer::Token::ADD;
+    this->op_view = "+";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, +),
+        CF_FUN_INT("uint16", "uint16", uint16, +),
+        CF_FUN_INT("uint32", "uint32", uint32, +),
+        CF_FUN_INT("uint64", "uint64", uint64, +),
+
+        CF_FUN_INT("int8", "int8", int8, +),
+        CF_FUN_INT("int16", "int16", int16, +),
+        CF_FUN_INT("int32", "int32", int32, +),
+        CF_FUN_INT("int64", "int64", int64, +),
+
+        CF_FUN_FLT("float16", "float16", float32, +),
+        CF_FUN_FLT("float32", "float32", float32, +),
+        CF_FUN_FLT("float64", "float64", float64, +),
+        CF_FUN_FLT("float80", "float80", float80, +),
+    };
 }
 
 AddAST::~AddAST(){};
@@ -46,8 +138,6 @@ String AddAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
-
-String AddAST::emitCST() const { return "("s + left->emitCST() + " + " + right->emitCST() + ")"; }
 
 sptr<AST> AddAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
 
@@ -101,35 +191,6 @@ sptr<AST> AddAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Nam
     return nullptr;
 }
 
-void AddAST::forceType(String type) {
-    std::regex i("u?int(8|16|32|64|128)");
-    std::regex f("float(16|32|64|128)");
-    bool       int_required   = std::regex_match(type, i);
-    bool       float_required = std::regex_match(type, f);
-
-    // force the types of the sub-trees
-    if (std::regex_match(left->getCstType(), i) && int_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-    if (std::regex_match(left->getCstType(), f) && float_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-
-    // check for operator overloading [WIP/TODO]
-    CstType ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::ADD);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator + (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator + (" + right->getCstType() + ") is not implemented.", 18);
-}
-
 // SubAST
 
 SubAST::SubAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
@@ -137,6 +198,23 @@ SubAST::SubAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens
     this->right  = right;
     this->tokens = tokens;
     this->op     = lexer::Token::SUB;
+    this->op_view = "-";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, -),
+        CF_FUN_INT("uint16", "uint16", uint16, -),
+        CF_FUN_INT("uint32", "uint32", uint32, -),
+        CF_FUN_INT("uint64", "uint64", uint64, -),
+
+        CF_FUN_INT("int8", "int8", int8, -),
+        CF_FUN_INT("int16", "int16", int16, -),
+        CF_FUN_INT("int32", "int32", int32, -),
+        CF_FUN_INT("int64", "int64", int64, -),
+
+        CF_FUN_FLT("float16", "float16", float32, -),
+        CF_FUN_FLT("float32", "float32", float32, -),
+        CF_FUN_FLT("float64", "float64", float64, -),
+        CF_FUN_FLT("float80", "float80", float80, -),
+    };
 }
 
 SubAST::~SubAST(){};
@@ -153,37 +231,6 @@ String SubAST::emitLL(int* locc, String inp) const {
     return r + inp;
 }
 
-String SubAST::emitCST() const { return "("s + left->emitCST() + " - " + right->emitCST() + ")"; }
-
-void SubAST::forceType(String type) {
-    std::regex i("u?int(8|16|32|64|128)");
-    std::regex f("float(16|32|64|128)");
-    bool       int_required   = std::regex_match(type, i);
-    bool       float_required = std::regex_match(type, f);
-
-    // force the types of the sub-trees
-    if (std::regex_match(left->getCstType(), i) && int_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-    if (std::regex_match(left->getCstType(), f) && float_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-
-    // check for operator overloading [WIP/TODO]
-    String ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::SUB);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator - (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator - (" + right->getCstType() + ") is not implemented.", 18);
-}
-
 // MulAST
 
 MulAST::MulAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
@@ -191,6 +238,23 @@ MulAST::MulAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens
     this->right  = right;
     this->tokens = tokens;
     this->op     = lexer::Token::MUL;
+    this->op_view = "*";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, *),
+        CF_FUN_INT("uint16", "uint16", uint16, *),
+        CF_FUN_INT("uint32", "uint32", uint32, *),
+        CF_FUN_INT("uint64", "uint64", uint64, *),
+
+        CF_FUN_INT("int8", "int8", int8, *),
+        CF_FUN_INT("int16", "int16", int16, *),
+        CF_FUN_INT("int32", "int32", int32, *),
+        CF_FUN_INT("int64", "int64", int64, *),
+
+        CF_FUN_FLT("float16", "float16", float32, *),
+        CF_FUN_FLT("float32", "float32", float32, *),
+        CF_FUN_FLT("float64", "float64", float64, *),
+        CF_FUN_FLT("float80", "float80", float80, *),
+    };
 }
 
 MulAST::~MulAST(){};
@@ -206,8 +270,6 @@ String MulAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
-
-String MulAST::emitCST() const { return "("s + left->emitCST() + " * " + right->emitCST() + ")"; }
 
 sptr<AST> MulAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
     if (tokens.size() < 1)
@@ -243,35 +305,6 @@ sptr<AST> MulAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Nam
     return nullptr;
 }
 
-void MulAST::forceType(String type) {
-    std::regex i("u?int(8|16|32|64|128)");
-    std::regex f("float(16|32|64|128)");
-    bool       int_required   = std::regex_match(type, i);
-    bool       float_required = std::regex_match(type, f);
-
-    // force the types of the sub-trees
-    if (std::regex_match(left->getCstType(), i) && int_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-    if (std::regex_match(left->getCstType(), f) && float_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-
-    // check for operator overloading [WIP/TODO]
-    String ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::MUL);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator * (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator * (" + right->getCstType() + ") is not implemented.", 18);
-}
-
 // DivAST
 
 DivAST::DivAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
@@ -279,6 +312,23 @@ DivAST::DivAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens
     this->right  = right;
     this->tokens = tokens;
     this->op     = lexer::Token::DIV;
+    this->op_view = "/";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, /),
+        CF_FUN_INT("uint16", "uint16", uint16, /),
+        CF_FUN_INT("uint32", "uint32", uint32, /),
+        CF_FUN_INT("uint64", "uint64", uint64, /),
+
+        CF_FUN_INT("int8", "int8", int8, /),
+        CF_FUN_INT("int16", "int16", int16, /),
+        CF_FUN_INT("int32", "int32", int32, /),
+        CF_FUN_INT("int64", "int64", int64, /),
+
+        CF_FUN_FLT("float16", "float16", float32, /),
+        CF_FUN_FLT("float32", "float32", float32, /),
+        CF_FUN_FLT("float64", "float64", float64, /),
+        CF_FUN_FLT("float80", "float80", float80, /),
+    };
 }
 
 DivAST::~DivAST(){};
@@ -295,37 +345,6 @@ String DivAST::emitLL(int* locc, String inp) const {
     return r + inp;
 }
 
-String DivAST::emitCST() const { return "("s + left->emitCST() + " / " + right->emitCST() + ")"; }
-
-void DivAST::forceType(String type) {
-    std::regex i("u?int(8|16|32|64|128)");
-    std::regex f("float(16|32|64|128)");
-    bool       int_required   = std::regex_match(type, i);
-    bool       float_required = std::regex_match(type, f);
-
-    // force the types of the sub-trees
-    if (std::regex_match(left->getCstType(), i) && int_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-    if (std::regex_match(left->getCstType(), f) && float_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-
-    // check for operator overloading [WIP/TODO]
-    String ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::DIV);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator / (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator / (" + right->getCstType() + ") is not implemented.", 18);
-}
-
 // ModAST
 
 ModAST::ModAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
@@ -333,6 +352,18 @@ ModAST::ModAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens
     this->right  = right;
     this->tokens = tokens;
     this->op     = lexer::Token::MOD;
+    this->op_view = "%";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, %),
+        CF_FUN_INT("uint16", "uint16", uint16, %),
+        CF_FUN_INT("uint32", "uint32", uint32, %),
+        CF_FUN_INT("uint64", "uint64", uint64, %),
+
+        CF_FUN_INT("int8", "int8", int8, %),
+        CF_FUN_INT("int16", "int16", int16, %),
+        CF_FUN_INT("int32", "int32", int32, %),
+        CF_FUN_INT("int64", "int64", int64, %),
+    };
 }
 
 ModAST::~ModAST(){};
@@ -348,80 +379,39 @@ String ModAST::emitLL(int* locc, String inp) const {
     return r + inp;
 }
 
-String ModAST::emitCST() const { return "("s + left->emitCST() + " % " + right->emitCST() + ")"; }
-
-void ModAST::forceType(String type) {
-    std::regex i("u?int(8|16|32|64|128)");
-    std::regex f("float(16|32|64|128)");
-    bool       int_required   = std::regex_match(type, i);
-    bool       float_required = std::regex_match(type, f);
-
-    // force the types of the sub-trees
-    if (std::regex_match(left->getCstType(), i) && int_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-    if (std::regex_match(left->getCstType(), i) && float_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-
-    // check for operator overloading [WIP/TODO]
-    String ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::MOD);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator % (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator % (" + right->getCstType() + ") is not implemented.", 18);
-}
-
 // PowAST
+
+#define CF_FUN_POW(type, type2) {std::make_tuple(type, type), nlambda (String v1, String v2) {return std::to_string(type2(std::pow(float80(std::stoll(v1)),float80(std::stoll(v2)))));} }
+#define CF_FUN_POW_FLT(type, type2) {std::make_tuple(type, type), nlambda (String v1, String v2) {return std::to_string(type2(std::pow(float80(std::stold(v1)),float80(std::stold(v2)))));} }
+
 
 PowAST::PowAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
     this->left   = left;
     this->right  = right;
     this->tokens = tokens;
     this->op     = lexer::Token::POW;
+    this->op_view = "**";
+    this->const_folding_fn = {
+        CF_FUN_POW("uint8", uint8),
+        CF_FUN_POW("uint16", uint16),
+        CF_FUN_POW("uint32", uint32),
+        CF_FUN_POW("uint64", uint64),
+
+        CF_FUN_POW("int8", int8),
+        CF_FUN_POW("int16", int16),
+        CF_FUN_POW("int32", int32),
+        CF_FUN_POW("int64", int64),
+
+        CF_FUN_POW_FLT("float16", float32),
+        CF_FUN_POW_FLT("float32", float32),
+        CF_FUN_POW_FLT("float64", float64),
+        CF_FUN_POW_FLT("float80", float80),
+    };
 }
 
 PowAST::~PowAST(){};
 
 String PowAST::emitLL(int*, String) const { return ""; }
-
-String PowAST::emitCST() const { return "("s + left->emitCST() + " ** " + right->emitCST() + ")"; }
-
-void PowAST::forceType(String type) {
-    std::regex i("u?int(8|16|32|64|128)");
-    std::regex f("float(16|32|64|128)");
-    bool       int_required   = std::regex_match(type, i);
-    bool       float_required = std::regex_match(type, f);
-
-    // force the types of the sub-trees
-    if (std::regex_match(left->getCstType(), i) && int_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-    if (std::regex_match(left->getCstType(), i) && float_required) {
-        left->forceType(type);
-        right->forceType(type);
-    }
-
-    // check for operator overloading [WIP/TODO]
-    String ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::POW);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator ** (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator ** (" + right->getCstType() + ") is not implemented.", 18);
-}
 
 sptr<AST> PowAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
     if (tokens.size() < 1)
@@ -458,6 +448,10 @@ LorAST::LorAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens
     this->right  = right;
     this->tokens = tokens;
     this->op     = lexer::Token::LOR;
+    this->op_view = "||";
+    this->const_folding_fn = {
+        {std::make_tuple("bool","bool"), nlambda (String v1, String v2) {return (v1 == "true"s || v2 == "true")? "true"s : "false"s;} }
+    };
 }
 
 LorAST::~LorAST(){};
@@ -472,9 +466,6 @@ String LorAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
-
-String LorAST::emitCST() const { return "("s + left->emitCST() + " || " + right->emitCST() + ")"; }
-
 sptr<AST> LorAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
     if (tokens.size() < 1)
         return nullptr;
@@ -504,26 +495,17 @@ sptr<AST> LorAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Nam
     return nullptr;
 }
 
-void LorAST::forceType(String type) {
-
-    String ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::LOR);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator || (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator || (" + right->getCstType() + ") is not implemented.", 18);
-}
-
 // LandAST
 
 LandAST::LandAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
     this->left   = left;
     this->right  = right;
     this->tokens = tokens;
+    this->op     = lexer::Token::LAND;
+    this->op_view = "&&";
+    this->const_folding_fn = {
+        {std::make_tuple("bool","bool"), nlambda (String v1, String v2) {return (v1 == "true"s && v2 == "true")? "true"s : "false"s;} }
+    };
 }
 
 LandAST::~LandAST(){};
@@ -538,9 +520,6 @@ String LandAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
-
-String LandAST::emitCST() const { return String("(") + left->emitCST() + " && " + right->emitCST() + ")"; }
-
 sptr<AST> LandAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
     if (tokens.size() < 1)
         return nullptr;
@@ -570,18 +549,183 @@ sptr<AST> LandAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Na
     return nullptr;
 }
 
-void LandAST::forceType(String type) {
+// OrAST
 
-    String ret = parser::hasOp(left->getCstType(), right->getCstType(), lexer::Token::Type::LAND);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator && (" + right->getCstType() + ") yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator && (" + right->getCstType() + ") is not implemented.", 18);
+OrAST::OrAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
+    this->left   = left;
+    this->right  = right;
+    this->tokens = tokens;
+    this->op     = lexer::Token::OR;
+    this->op_view = "|";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, |),
+        CF_FUN_INT("uint16", "uint16", uint16, |),
+        CF_FUN_INT("uint32", "uint32", uint32, |),
+        CF_FUN_INT("uint64", "uint64", uint64, |),
+
+        CF_FUN_INT("int8", "int8", int8, |),
+        CF_FUN_INT("int16", "int16", int16, |),
+        CF_FUN_INT("int32", "int32", int32, |),
+        CF_FUN_INT("int64", "int64", int64, |),
+    };
+}
+String OrAST::emitLL(int* locc, String inp) const {
+    String op  = "or";
+    String inc = "{} = "s + op + " " + getLLType() + " {}, {}\n";
+    String l   = right->emitLL(locc, inc);
+    String r   = left->emitLL(locc, l);
+    r          = insert("%"s + std::to_string(++(*locc)), r);
+    inp        = rinsert("%"s + std::to_string(*locc), inp);
+
+    return r + inp;
+}
+sptr<AST> OrAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
+    if (tokens.size() < 1)
+        return nullptr;
+    auto   t     = tokens;
+    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LOR}, local);
+    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
+#ifdef DEBUG
+        std::cout << "OrAST::parse:\tsplit:\t" << split << std::endl;
+#endif
+        lexer::Token op   = tokens[split];
+        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
+        if (left == nullptr) {
+            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            return share<AST>(new AST());
+        }
+        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
+        if (right == nullptr) {
+            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            return share<AST>(new AST());
+        }
+        if (op.type == lexer::Token::Type::OR)
+            return share<AST>(new OrAST(left, right, t));
+    }
+
+    return nullptr;
+}
+
+// AndAST
+
+AndAST::AndAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
+    this->left   = left;
+    this->right  = right;
+    this->tokens = tokens;
+    this->op     = lexer::Token::AND;
+    this->op_view = "&";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, &),
+        CF_FUN_INT("uint16", "uint16", uint16, &),
+        CF_FUN_INT("uint32", "uint32", uint32, &),
+        CF_FUN_INT("uint64", "uint64", uint64, &),
+
+        CF_FUN_INT("int8", "int8", int8, &),
+        CF_FUN_INT("int16", "int16", int16, &),
+        CF_FUN_INT("int32", "int32", int32, &),
+        CF_FUN_INT("int64", "int64", int64, &),
+    };
+}
+
+String AndAST::emitLL(int* locc, String inp) const {
+    String op  = "and";
+    String inc = "{} = "s + op + " " + getLLType() + " {}, {}\n";
+    String l   = right->emitLL(locc, inc);
+    String r   = left->emitLL(locc, l);
+    r          = insert("%"s + std::to_string(++(*locc)), r);
+    inp        = rinsert("%"s + std::to_string(*locc), inp);
+
+    return r + inp;
+}
+sptr<AST> AndAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
+    if (tokens.size() < 1)
+        return nullptr;
+    auto   t     = tokens;
+    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LAND}, local);
+    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
+#ifdef DEBUG
+        std::cout << "AndAST::parse:\tsplit:\t" << split << std::endl;
+#endif
+        lexer::Token op   = tokens[split];
+        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
+        if (left == nullptr) {
+            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            return share<AST>(new AST());
+        }
+        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
+        if (right == nullptr) {
+            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            return share<AST>(new AST());
+        }
+        if (op.type == lexer::Token::Type::AND)
+            return share<AST>(new AndAST(left, right, t));
+    }
+
+    return nullptr;
+}
+
+// XorAST
+
+XorAST::XorAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens) {
+    this->left   = left;
+    this->right  = right;
+    this->tokens = tokens;
+    this->op     = lexer::Token::XOR;
+    this->op_view = "^";
+    this->const_folding_fn = {
+        CF_FUN_INT("uint8", "uint8", uint8, ^),
+        CF_FUN_INT("uint16", "uint16", uint16, ^),
+        CF_FUN_INT("uint32", "uint32", uint32, ^),
+        CF_FUN_INT("uint64", "uint64", uint64, ^),
+
+        CF_FUN_INT("int8", "int8", int8, ^),
+        CF_FUN_INT("int16", "int16", int16, ^),
+        CF_FUN_INT("int32", "int32", int32, ^),
+        CF_FUN_INT("int64", "int64", int64, ^),
+    };
+}
+
+String XorAST::emitLL(int* locc, String inp) const {
+    String op  = "xor";
+    String inc = "{} = "s + op + " " + getLLType() + " {}, {}\n";
+    String l   = right->emitLL(locc, inc);
+    String r   = left->emitLL(locc, l);
+    r          = insert("%"s + std::to_string(++(*locc)), r);
+    inp        = rinsert("%"s + std::to_string(*locc), inp);
+
+    return r + inp;
+}
+sptr<AST> XorAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
+    if (tokens.size() < 1)
+        return nullptr;
+    auto   t     = tokens;
+    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LAND}, local);
+    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
+#ifdef DEBUG
+        std::cout << "AndAST::parse:\tsplit:\t" << split << std::endl;
+#endif
+        lexer::Token op   = tokens[split];
+        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
+        if (left == nullptr) {
+            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            return share<AST>(new AST());
+        }
+        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
+        if (right == nullptr) {
+            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            return share<AST>(new AST());
+        }
+        if (op.type == lexer::Token::Type::XOR)
+            return share<AST>(new XorAST(left, right, t));
+    }
+
+    return nullptr;
 }
 
 // NotAST
@@ -590,20 +734,10 @@ NotAST::NotAST(sptr<AST> inner, std::vector<lexer::Token> tokens) {
     this->left   = inner;
     this->tokens = tokens;
     this->op     = lexer::Token::NOT;
-}
-
-void NotAST::forceType(String type) {
-
-    String ret = parser::hasOp(left->getCstType(), left->getCstType(), op);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator ! () yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator ! () is not implemented.", 18);
+    this->op_view = "!";
+    this->const_folding_fn = {
+        {"bool", nlambda (String v) {return (v == "true" ? "false"s : "true"s);} }
+    };
 }
 
 sptr<AST> NotAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
@@ -622,30 +756,24 @@ sptr<AST> NotAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Nam
     return nullptr;
 }
 
-String NotAST::emitCST() const {
-    return "!"s+left->emitCST();
-}
-
 // NegAST
 
 NegAST::NegAST(sptr<AST> inner, std::vector<lexer::Token> tokens) {
-    this->left   = inner;
-    this->tokens = tokens;
-    this->op     = lexer::Token::NEG;
-}
-
-void NegAST::forceType(String type) {
-
-    String ret = parser::hasOp(left->getCstType(), left->getCstType(), op);
-    if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
-                          left->getCstType() + "::operator ~ () yields " + ret +
-                              " (expected \e[1m" + type + "\e[0m)",
-                          18);
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator ~ () is not implemented.", 18);
+    this->left    = inner;
+    this->tokens  = tokens;
+    this->op      = lexer::Token::NEG;
+    this->op_view = "~";
+    this->const_folding_fn = {
+        {"uint8"s,  nlambda (String v) {return std::to_string(~(uint8) (std::stoi(v)));}  },
+        {"uint16"s, nlambda (String v) {return std::to_string(~(uint16)(std::stoi(v)));}  },
+        {"uint32"s, nlambda (String v) {return std::to_string(~(uint32)(std::stol(v)));}  },
+        {"uint64"s, nlambda (String v) {return std::to_string(~(uint64)(std::stoll(v)));} },
+        
+        {"int8"s,  nlambda (String v) {return std::to_string(~(int8) (std::stoi(v)));}  },
+        {"int16"s, nlambda (String v) {return std::to_string(~(int16)(std::stoi(v)));}  },
+        {"int32"s, nlambda (String v) {return std::to_string(~(int32)(std::stol(v)));}  },
+        {"int64"s, nlambda (String v) {return std::to_string(~(int64)(std::stoll(v)));} },
+    };
 }
 
 sptr<AST> NegAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
@@ -663,11 +791,6 @@ sptr<AST> NegAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Nam
 
     return nullptr;
 }
-
-String NegAST::emitCST() const {
-    return "~"s+left->emitCST();
-}
-
 
 // AddrOfAST
 
@@ -877,7 +1000,7 @@ sptr<AST> math::parse(std::vector<lexer::Token> tokens, int local, symbol::Names
                               {IntLiteralAST::parse, FloatLiteralAST::parse, BoolLiteralAST::parse,
                                CharLiteralAST::parse, StringLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
 
-                               AddAST::parse, MulAST::parse, PowAST::parse, LandAST::parse, LorAST::parse,
+                               AddAST::parse, MulAST::parse, PowAST::parse, LandAST::parse, LorAST::parse, NotAST::parse, NegAST::parse,
 
                                CastAST::parse, CheckAST::parse, FuncCallAST::parse, parse_pt},
                               local, sr, expected_type);

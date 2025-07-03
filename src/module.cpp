@@ -11,7 +11,9 @@
 #include "lexer/token.hpp"
 #include "parser/ast/ast.hpp"
 #include "parser/ast/flow.hpp"
+#include "parser/ast/func.hpp"
 #include "parser/errors.hpp"
+#include "parser/parser.hpp"
 #include "parser/symboltable.hpp"
 #include "snippets.h"
 #include <algorithm>
@@ -23,6 +25,7 @@
 #include <map>
 #include "module.hpp"
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <utility>
@@ -55,11 +58,11 @@ inline String h(String s) {
     return s;
 }
 
-bool Module::isHeader(){
+bool Module::isHeader() const {
     return std::fs::exists(hst_file);
 }
 
-bool Module::isKnown(){
+bool Module::isKnown() const{
    return std::fs::exists(cst_file);
 }
 
@@ -202,7 +205,7 @@ String Module::mod2Path(String mod){
 /**
  * @brief get a visual representation of this Object
  */
-String Module::_str(){
+String Module::_str() const {
   return fillup("\e[1m"s + module_name + "\e[0m", 50) +
         (isHeader() ? "\e[36;1m[h]\e[0m"s : "   "s) +
         (is_main_file ? "\e[32;1m[m]\e[0m"s : "   "s) +
@@ -383,23 +386,38 @@ void Module::parse(){
     if (root != nullptr){
         int* i = new int;
         *i     = 0;
-        // std::cout << root->emitCST() << std::endl;
+        std::cout << str(root.get()) << std::endl;
         // std::cout << root->emitLL(i,"") << std::endl;
 
         delete i;
+
+        for (sptr<AST> a : std::dynamic_pointer_cast<SubBlockAST>(root)->contents) {
+            if (instanceOf(a, FuncCallAST)) {
+                auto r = std::dynamic_pointer_cast<FuncCallAST>(a);
+                auto warn_error = parser::error;
+                if (r->getCstType() == "void") continue;
+                if (parser::isAtomic(r->getCstType())) {
+                    warn_error = parser::warn;
+                }
+                warn_error("Type linearity violated",r->getTokens(),"return values of this function are discarded",0,"");
+            }
+        }
     }
     // check variables for usage
     for (std::pair<String, std::vector<symbol::Reference*>> sr : contents){
         if (sr.second.at(0) == dynamic_cast<symbol::Variable*>(sr.second.at(0))){
-            auto var = (symbol::Variable*) sr.second.at(0);
+            auto var = (symbol::Variable*)sr.second.at(0);
+            // if (parser::isAtomic(var->getCstType())) continue;
+            if (var->getName()[0] == '_') continue;
             if (var->used == symbol::Variable::PROVIDED){
-                parser::warn("Unconsumed Variable", var->last, "This variable was provided, but never consumed", 0);
+                parser::warn("Unconsumed Variable", var->last, "This variable was provided, but never consumed.\nIf this was intended, prefix it with an '_'.", 0);
             }
             if (var->used == symbol::Variable::UNINITIALIZED){
-                parser::warn("Unused Variable", var->tokens, "This variable was declared, but never used", 0);
+                parser::warn("Unused Variable", var->tokens, "This variable was declared, but never used.\nIf this was intended, prefix it with an '_'.", 0);
             }
         }
     }
+
     std::cout << "\rParsing modules (" << ++parsed_modules << "/" << Module::modules.size() << ")";
 }
 

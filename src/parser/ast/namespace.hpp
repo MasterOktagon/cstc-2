@@ -17,7 +17,10 @@
 class NamespaceAST : public AST {
 
     sptr<SubBlockAST> block = nullptr;
-    symbol::Namespace* ns = nullptr;
+    symbol::Namespace* ns    = nullptr;
+
+    protected:
+    String _str() const;
 
     public:
     NamespaceAST(sptr<SubBlockAST> a, symbol::Namespace* ns){block = a; this->ns = ns;}

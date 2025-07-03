@@ -25,6 +25,17 @@ String NamespaceAST::emitCST() const {
     return "namespace "s + ns->getRawLoc() + " {\n" + intab(ret) + "\n}";
 }
 
+String NamespaceAST::_str() const {
+    String ret = "";
+    for (sptr<AST> a : block->contents) {
+        if (a != nullptr){
+            ret += str(a.get());
+            ret += "\n";
+        }
+    }
+    return "<namespace "s + ns->getRawLoc() + " \n" + intab(ret) + "\n>";
+}
+
 String NamespaceAST::emitLL(int* i, String s) const {
     return block->emitLL(i, s);
 }

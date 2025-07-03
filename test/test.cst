@@ -1,11 +1,8 @@
-uint8 c;
-uint8 d;
-uint8 a = uint8::MIN_VALUE;
-uint8? b;
-b = a as uint8?;
-a = b?;
-c = d = a;
 
-enum Test {
-    
-}
+
+mut uint8 a;
+uint8 b = 2**3 * 4 - 2;
+const uint8 c = uint8::MAX_VALUE - 1;
+a = c + 1;
+
+float32 _e = 3.1 + 2.1;

@@ -16,7 +16,7 @@ namespace symbol {
     
         protected:
         String loc;
-        virtual String _str(){
+        virtual String _str() const {
             return "symbol::Reference"s;
         }
 
@@ -52,7 +52,7 @@ namespace symbol {
          */
 
         CstType type;
-        String name;
+        String  name;
 
         public:
 
@@ -62,14 +62,15 @@ namespace symbol {
             CONSUMED = 2,
         };
 
-        bool isConst = false;
-        bool isFinal = false;
+        bool isConst   = false;
+        bool isMutable = false;
         Status used = UNINITIALIZED;
-        bool isFree = false;
+        bool   isFree  = false;
+        String  const_value;
         Variable(String name, LLType type, std::vector<lexer::Token> tokens, symbol::Reference* parent) : type(std::move(type)), name(name)
             {loc = name; this->tokens = tokens; last=tokens; this->parent=parent;}
         virtual ~Variable(){};
-        virtual String _str() {
+        virtual String _str() const {
             return "symbol::Variable "s + getLoc();
         }
         virtual LLType getLLType(){return "void"s;}
@@ -87,7 +88,7 @@ namespace symbol {
         CstType type;
 
         protected:
-        virtual String _str() {
+        virtual String _str() const {
             return "symbol::Function "s + getLoc();
         }
         public:
@@ -112,7 +113,7 @@ namespace symbol {
           std::vector<Namespace *> include{};
           std::map<String, String> import_from = {}; //> import-from map
 
-        virtual String _str(){
+        virtual String _str() const {
             return "symbol::Namespace "s + getLoc();
         }
         public:
@@ -163,7 +164,7 @@ namespace symbol {
          */
 
         protected:
-        virtual String _str() {
+        virtual String _str() const {
             return "symbol::Struct "s + getLoc();
         }
         public:

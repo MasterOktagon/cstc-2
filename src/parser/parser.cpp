@@ -8,9 +8,11 @@
 #include <regex>
 #include "ast/ast.hpp"
 #include "symboltable.hpp"
-#include <iostream>
-
 //#define DEBUG
+
+#ifdef DEBUG
+    #include <iostream>
+#endif
 
 #define INT_OPS(type)                                                       \
     if (type1 == type){                                                     \
@@ -20,6 +22,9 @@
             if (op == lexer::Token::Type::AS) return "bool";                \
         }                                                                   \
         if(std::regex_match(type2, int_regex)){                             \
+            if (op == lexer::Token::Type::AS) return type2;                 \
+        }                                                                   \
+        if(std::regex_match(type2, flt_regex)){                             \
             if (op == lexer::Token::Type::AS) return type2;                 \
         }                                                                   \
         if(type2 == "char"){                                                \
@@ -38,6 +43,30 @@
         } \
     }
 
+#define FLT_OPS(type)                                                       \
+    if (type1 == type){                                                     \
+        if(type2 == "bool"){                                                \
+            if (op == lexer::Token::Type::AS) return "bool";                \
+        }                                                                   \
+        if(std::regex_match(type2, int_regex)){                             \
+            if (op == lexer::Token::Type::AS) return type2;                 \
+        }                                                                   \
+        if(std::regex_match(type2, flt_regex)){                             \
+            if (op == lexer::Token::Type::AS) return type2;                 \
+        }                                                                   \
+        if(type2 == "char"){                                                \
+            if (op == lexer::Token::Type::AS) return "char";                \
+        }                                                                   \
+        if (type2 == type){                                                 \
+            if (op == lexer::Token::Type::ADD) return type;                 \
+            if (op == lexer::Token::Type::SUB) return type;                 \
+            if (op == lexer::Token::Type::MUL) return type;                 \
+            if (op == lexer::Token::Type::DIV) return type;                 \
+            if (op == lexer::Token::Type::MOD) return type;                 \
+            if (op == lexer::Token::Type::POW) return type;                 \
+        } \
+    }
+
 
 String parser::hasOp(String type1, String type2, lexer::Token::Type op){
     if(type1 == "@unknown" || type2 == "@unknown") return "@unknown";
@@ -47,7 +76,7 @@ String parser::hasOp(String type1, String type2, lexer::Token::Type op){
     }
 
     std::regex int_regex("u?int(8|16|32|64|128)");
-    //std::regex float_regex("u?int(8|16|32|64|128)");
+    std::regex flt_regex("float(16|32|64|80)");
     if (type1 == "bool"){
         if (op == lexer::Token::Type::NOT) return "bool";
         if (op == lexer::Token::Type::NEG) return "";
@@ -66,6 +95,7 @@ String parser::hasOp(String type1, String type2, lexer::Token::Type op){
         }
     }
     INT_OPS("@int");
+    INT_OPS("uint8");
     INT_OPS("uint16");
     INT_OPS("uint32");
     INT_OPS("uint64");
@@ -76,6 +106,11 @@ String parser::hasOp(String type1, String type2, lexer::Token::Type op){
     INT_OPS("int32");
     INT_OPS("int64");
     INT_OPS("int128");
+
+    FLT_OPS("float16");
+    FLT_OPS("float32");
+    FLT_OPS("float64");
+    FLT_OPS("float80");
 
     return "";
 }
@@ -223,9 +258,9 @@ bool parser::isAtomic(String type){
     if(type == "float16") return true;
     if(type == "float32") return true;
     if(type == "float64") return true;
-    if(type == "float128") return true;
-    //if(type[type.size()-1] == '*') return true;
-    //if(type[type.size()-1] == '&') return true;
+    if(type == "float80") return true;
+    if (type[type.size() - 1] == '&') return true;
+    if(type.size() > 1 && type.substr(type.size()-2) == "&!") return true;
     //if(type[type.size()-1] == '?') return true;
     return false;
 }
@@ -287,6 +322,8 @@ parser::Modifier parser::getModifier(std::vector<lexer::Token>& tokens){
     for (i=0; i<tokens.size(); i++){
         if (tokens.at(i).type == lexer::Token::Type::CONST)
             m = Modifier(m | Modifier::CONST);
+        else if (tokens.at(i).type == lexer::Token::Type::MUT)
+            m = Modifier(m | Modifier::MUTABLE);
         else break;
     }
     #ifdef DEBUG

@@ -7,9 +7,12 @@
 //
 
 #include "ast.hpp"
+#include <map>
+#include <tuple>
 #include <vector>
 #include "../../lexer/token.hpp"
 #include "../symboltable.hpp"
+#include "../../snippets.h"
 
 /**
  * @namespace that includes the "default" expression parsing functions
@@ -45,6 +48,10 @@ class DoubleOperandAST : public ExpressionAST {
     sptr<AST> left;  //> left operand
     sptr<AST> right; //> right operand
     lexer::Token::Type op = lexer::Token::NONE;
+    String             op_view = "";
+    std::map<std::tuple<CstType, CstType>, fsignal<String, String, String>> const_folding_fn = {};
+
+    String _str() const final;
     
     public:
     DoubleOperandAST() {};
@@ -52,6 +59,8 @@ class DoubleOperandAST : public ExpressionAST {
 
     LLType getLLType()   const final;
     CstType getCstType() const final;
+    void    forceType(CstType) final;
+    String  emitCST() const final;
 
     uint64 nodeSize() const final;
 };
@@ -60,6 +69,10 @@ class UnaryOperandAST : public ExpressionAST {
     protected:
     sptr<AST> left;  //> left operand
     lexer::Token::Type op = lexer::Token::NONE;
+    String             op_view = "";
+    std::map<CstType, fsignal<String, String>> const_folding_fn = {};
+
+    String _str() const final;
     
     public:
     UnaryOperandAST() {};
@@ -69,6 +82,8 @@ class UnaryOperandAST : public ExpressionAST {
     
     LLType getLLType()   const final;
     CstType getCstType() const final;
+    void forceType(CstType) final;
+    String emitCST() const final;
 
     uint64 nodeSize() const final;
 };
@@ -85,9 +100,6 @@ class AddAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 
     /**
      * @brief parse an addition or subtraction (due to both having the same precedences)
@@ -109,9 +121,6 @@ class SubAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 };
 
 /**
@@ -126,9 +135,6 @@ class MulAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 
     /**
      * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
@@ -150,9 +156,6 @@ class DivAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 };
 
 /**
@@ -167,9 +170,6 @@ class ModAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 };
 
 /**
@@ -184,9 +184,6 @@ class PowAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 
     /**
      * @brief parse a power
@@ -207,9 +204,6 @@ class LorAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 
     /**
      * @brief parse a logical and
@@ -230,9 +224,6 @@ class LandAST : public DoubleOperandAST {
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 
     /**
      * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
@@ -248,17 +239,14 @@ class LandAST : public DoubleOperandAST {
 class OrAST : public DoubleOperandAST {
     public:
     OrAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
-    virtual ~OrAST();
+    virtual ~OrAST() = default;
 
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 
     /**
-     * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
+     * @brief parse a bitwise or
      * 
      * @return AST or nullptr if no match
      */
@@ -271,17 +259,34 @@ class OrAST : public DoubleOperandAST {
 class AndAST : public DoubleOperandAST {
     public:
     AndAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
-    virtual ~AndAST();
+    virtual ~AndAST() = default;
 
     // fwd declarations. @see @class AST 
 
     virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
 
     /**
-     * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
+     * @brief parse a bitwise and
+     * 
+     * @return AST or nullptr if no match
+     */
+    static sptr<AST> parse(PARSER_FN);
+};
+
+/**
+ * @class that represents a '^' operation
+ */
+class XorAST : public DoubleOperandAST {
+    public:
+    XorAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    virtual ~XorAST() = default;
+
+    // fwd declarations. @see @class AST 
+
+    virtual String emitLL  (int*, String) const;
+
+    /**
+     * @brief parse a xor
      * 
      * @return AST or nullptr if no match
      */
@@ -298,11 +303,7 @@ class NotAST : public UnaryOperandAST {
 
     // fwd declarations. @see @class AST 
 
-    virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
-
+    virtual String emitLL  (int*, String) const {return "";}
     /**
      * @brief parse a not
      * 
@@ -321,10 +322,7 @@ class NegAST : public UnaryOperandAST {
 
     // fwd declarations. @see @class AST 
 
-    virtual String emitLL  (int*, String) const;
-    virtual String emitCST () const;
-
-    virtual void forceType(String type);
+    virtual String emitLL  (int*, String) const {return "";}
 
     /**
      * @brief parse a bitwise negation

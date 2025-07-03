@@ -11,7 +11,10 @@ class VarDeclAST : public AST {
 
     String name = "";
     sptr<AST> type = nullptr;
-    symbol::Variable* v=nullptr;
+    symbol::Variable* v    = nullptr;
+
+    protected:
+    String _str() const;
 
     public:
     VarDeclAST(String name, sptr<AST> type, symbol::Variable* v);
@@ -33,7 +36,10 @@ class VarInitlAST : public AST {
     sptr<AST> type = nullptr;
     sptr<AST> expression = nullptr;
     symbol::Variable* v=nullptr;
-    bool as_optional = false;
+    bool              as_optional = false;
+
+    protected:
+    String _str() const;
 
     public:
     VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v, std::vector<lexer::Token> tokens);
@@ -53,7 +59,10 @@ class VarInitlAST : public AST {
 
 class VarAccesAST : public AST {
     String name = "";
-    symbol::Variable* var = nullptr;
+    symbol::Variable* var  = nullptr;
+
+    protected:
+    String _str() const;
 
     public:
     VarAccesAST(String name, symbol::Variable* sr, std::vector<lexer::Token> tokens);
@@ -74,7 +83,10 @@ class VarSetAST : public ExpressionAST {
     String name = "";
     symbol::Variable* var = nullptr;
     sptr<AST> expr = nullptr;
-    bool as_optional = false;
+    bool              as_optional = false;
+
+    protected:
+    String _str() const;
 
     public:
     VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, std::vector<lexer::Token> tokens);

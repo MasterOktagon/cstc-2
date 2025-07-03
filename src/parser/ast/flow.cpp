@@ -26,6 +26,15 @@ String SubBlockAST::emitCST() const {
     return ret;
 }
 
+String SubBlockAST::_str() const {
+    String ret = "";
+    for (sptr<AST> a : contents) {
+        ret += str(a.get());
+        ret += "\n";
+    }
+    return intab(ret);
+}
+
 String SubBlockAST::emitLL(int* locc, String inp) const {
     String ret = "";
     for (sptr<AST> a : contents){
@@ -66,4 +75,39 @@ sptr<AST> SubBlockAST::parse(std::vector<lexer::Token> tokens, int local, symbol
 
     return b;
 }
+
+
+sptr<AST> IfAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, std::string){
+    if (tokens.size() < 1)
+        return nullptr;
+    if (tokens.at(0).type == lexer::Token::IF) {
+        uint32 split = parser::rsplitStack(tokens, {lexer::Token::OPEN}, local);
+        if (split == 2) {
+            parser::error("Condition expected", parser::subvector(tokens, 0, 1, 2),
+                          "A boolean condition was expected before '{'", 0);
+            return share<AST>(new AST);
+        }
+        else if (split >= tokens.size()) {
+            parser::error("Block expected", tokens, "Expected a Block opening (opening brace '{')", 0);
+            return share<AST>(new AST);
+        }
+        if (tokens.at(tokens.size()).type != lexer::Token::CLOSE) {
+            parser::error("Block end expected", {tokens.at(tokens.size())}, "Expected a Block ending (closing brace '}')", 0);
+            return share<AST>(new AST);
+        }
+
+        sptr<AST> condition = math::parse(tokens, local + 1, sr);
+        if (condition == nullptr) {
+            parser::error("Condition expected", parser::subvector(tokens, 1, 1, split),
+                          "A boolean condition was expected before '{'", 0);
+            return share<AST>(new AST);
+        }
+
+        //sptr<SubBlockAST> sb = SubBlockAST::parse(parser::subvector(tokens, split,1,tokens.size()-1), local+1, sr);
+    }
+    
+    return nullptr;
+}
+
+
 

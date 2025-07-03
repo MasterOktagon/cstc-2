@@ -4,6 +4,7 @@
 #include "../parser.hpp"
 #include "../symboltable.hpp"
 #include "ast.hpp"
+#include "../../build/optimizer_flags.hpp"
 #include "base_math.hpp"
 #include "literal.hpp"
 #include "type.hpp"
@@ -49,6 +50,10 @@ VarDeclAST::VarDeclAST(String name, sptr<AST> type, symbol::Variable* v) {
     this->v    = v;
 }
 
+String VarDeclAST::_str() const {
+    return "<DECLARE "s + name + " : ?" + " MUT>";
+}
+
 sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
     if (tokens.size() < 3)
         return nullptr;
@@ -80,13 +85,21 @@ sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol:
                     parser::warn("Wrong casing", {tokens[tokens.size() - 2]}, "Variable name should be snake_case", 16);
                 }
                 if (m & parser::Modifier::CONST) {
-                    parser::error("const declaration without initizialiation", tokens2,
-                                  "A variable can only be const if an initizialisation is given", 25);
+                    parser::error("const declaration without initialization", tokens2,
+                                  "A variable can only be const if an initialization is given", 25);
+                    parser::note(tokens2, "remove the 'const' keyword to resolve this easily", 0);
+                    return sptr<AST>(new AST);
+                }
+                else if (!(m & parser::Modifier::MUTABLE)) {
+                    parser::error("immutable declaration without initialization", tokens2,
+                                  "A variable can only be immutable if an initialization is given", 25);
+                    parser::noteInsert("Make this variable mutable if required", tokens2[0], "mut ", 0, true);
                     return sptr<AST>(new AST);
                 }
 
                 symbol::Variable* v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
-                v->isConst = m & parser::Modifier::CONST;
+                v->isConst              = m & parser::Modifier::CONST;
+                v->isMutable            = m & parser::Modifier::MUTABLE;
                 sr->add(name, v);
                 if (parser::isAtomic(type->getCstType())){
                     v->isFree = true;
@@ -107,6 +120,9 @@ VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Va
     this->expression = expr;
     this->v          = v;
     this->tokens     = tokens;
+}
+String VarInitlAST::_str() const {
+    return "<DECLARE "s + name + " : " + type->getCstType() + " = " + str(expression.get()) + (v->isConst? " CONST"s : ""s) + (v->isMutable? " MUT"s : ""s) +  ">";
 }
 
 sptr<AST> VarInitlAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
@@ -155,10 +171,33 @@ sptr<AST> VarInitlAST::parse(std::vector<lexer::Token> tokens, int local, symbol
             if (!parser::IS_UPPER_CASE(name) && m & parser::Modifier::CONST) {
                 parser::warn("Wrong casing", {tokens[split - 1]}, "Variable name should be UPPER_CASE", 16);
             }
+            if (m & parser::Modifier::CONST) {
+                if (m & parser::Modifier::MUTABLE) {
+                    parser::error(
+                        "Variable declared as constant and mutable", {tokens[split - 1]},
+                        "This variable was declared as 'const' (unchangeable) and 'mut' (changeable) at the same time.",
+                        0);
+                    return share<AST>(new AST);
+                }
+            }
             expr->forceType(type->getCstType());
-
             auto v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
+
+            if (m & parser::Modifier::CONST) {
+                if (!expr->is_const) {
+                    parser::error(
+                        "Non-constant value in constant variable", expr->getTokens(),
+                        "you are trying to assign a non-constant value to a constant variable. This is not "
+                        "supported.\nRemove the 'const' keyword to get an immutable variable which allows that.",
+                        0);
+                    if (!optimizer::do_constant_folding) parser::note(expr->getTokens(), "This could be a direct result of disabling --opt:constant-folding", 0);
+                    delete v;
+                    return share<AST>(new AST);
+                }
+                v->const_value = expr->value;
+            }
             v->isConst = m & parser::Modifier::CONST;
+            v->isMutable = m & parser::Modifier::MUTABLE;
             sr->add(name, v);
             if (parser::isAtomic(type->getCstType())){
                 v->isFree = true;
@@ -182,6 +221,14 @@ VarAccesAST::VarAccesAST(String name, symbol::Variable* sr, std::vector<lexer::T
     this->name   = name;
     this->var    = sr;
     this->tokens = tokens;
+    this->is_const = var->isConst;
+    if (is_const) {
+        value = var->const_value;
+    }
+}
+
+String VarAccesAST::_str() const {
+    return "<ACCES "s + name + (is_const ? "[="s + var->const_value + "]" : ""s) + ">";
 }
 
 sptr<AST> VarAccesAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace* sr, String) {
@@ -238,6 +285,10 @@ VarSetAST::VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, std::vec
     this->tokens = tokens;
 }
 
+String VarSetAST::_str() const {
+    return "<"s + name + " = " + str(expr.get()) + ">";
+}
+
 sptr<AST> VarSetAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
     if (tokens.size() == 0)
         return nullptr;
@@ -270,8 +321,14 @@ sptr<AST> VarSetAST::parse(std::vector<lexer::Token> tokens, int local, symbol::
     expr->forceType((*sr)[name][0]->getCstType());
     symbol::Reference* p = (*sr)[name].at(0);
     if (p == dynamic_cast<symbol::Variable*>(p) && ((symbol::Variable*)p)->isConst) {
-        parser::error("trying to set constant", tokens, "You are trying to set a variable which has a constant value.",
+        parser::error("Trying to set constant", tokens, "You are trying to set a variable which has a constant value.",
                       17);
+        parser::note(p->tokens, "defined here:", 0);
+        return share<AST>(new AST);
+    }
+    if (!(p == dynamic_cast<symbol::Variable*>(p) && ((symbol::Variable*)p)->isMutable)) {
+        parser::error("Trying to set immutable", tokens, "You are trying to set a variable which was declared as immutable.",
+                      18);
         parser::note(p->tokens, "defined here:", 0);
         return share<AST>(new AST);
     }

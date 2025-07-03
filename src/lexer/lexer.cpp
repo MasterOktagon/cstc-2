@@ -133,7 +133,7 @@ lexer::Token::Type lexer::matchType(String c) {
     else if (c == "class"){ type = lexer::Token::Type::CLASS; }
     else if (c == "struct"){ type = lexer::Token::Type::STRUCT; }
     else if (c == "enum"){ type = lexer::Token::Type::ENUM; }
-    else if (c == "final"){ type = lexer::Token::Type::FINAL; }
+    else if (c == "mut"){ type = lexer::Token::Type::MUT; }
     else if (c == "abstract"){ type = lexer::Token::Type::ABSTRACT; }
     else if (c == "do"){ type = lexer::Token::Type::DO; }
     else if (c == "public"){ type = lexer::Token::Type::PUBLIC; }

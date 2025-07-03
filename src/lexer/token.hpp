@@ -120,7 +120,7 @@ namespace lexer {
             PRIVATE   ,
             STATIC    ,
             PUBLIC    ,
-            FINAL     ,
+            MUT       ,
             CONST     ,
             NAMESPACE ,
             NEW       ,

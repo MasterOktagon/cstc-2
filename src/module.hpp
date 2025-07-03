@@ -33,7 +33,7 @@ class Module final : public symbol::Namespace {
     /**
      * @brief get a visual representation of this Object
      */
-    String _str();
+    String _str() const;
     
 
     public:
@@ -43,8 +43,8 @@ class Module final : public symbol::Namespace {
     std::fs::path hst_file;         //> header location (relative)
     std::fs::path cst_file;         //> source location (relative)
 
-    bool isHeader();
-    bool isKnown();
+    bool isHeader() const;
+    bool isKnown() const;
 
     /**
      * @brief tokenize this module and parse for imports to include them

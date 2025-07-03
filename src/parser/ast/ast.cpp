@@ -7,7 +7,7 @@
 
 #include "ast.hpp"
 
-String AST::_str(){
+String AST::_str() const {
     return "<AST>";
 }
 

@@ -95,7 +95,7 @@ String lexer::getTokenName(lexer::Token::Type type){
         tokenToSTR(PRIVATE)
         tokenToSTR(STATIC)
         tokenToSTR(PUBLIC)
-        tokenToSTR(FINAL)
+        tokenToSTR(MUT)
         tokenToSTR(CONST)
         tokenToSTR(NAMESPACE)
         tokenToSTR(ABSTRACT)

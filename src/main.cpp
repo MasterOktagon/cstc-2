@@ -4,10 +4,12 @@
 // main porgram file
 //
 
+#include "build/optimizer_flags.hpp"
 #include "lexer/lexer.hpp"
 #include "module.hpp"
 #include "parser/errors.hpp"
 #include "snippets.h"
+#include "build/targets.hpp"
 #include "../lib/argparse/include/argparse/argparse.hpp"
 #include <filesystem>
 #include <iostream>
@@ -52,9 +54,29 @@ int32 main(int32 argc, const char** argv){
         .scan<'d', int32>()
         .default_value<int32>(100)
     ;
+    argparser.add_argument("--target")
+        .help("target for cross-compiler")
+        .default_value<String>("linux:x86:64:llvm")
+    ;
     argparser.add_argument("--no-std-lang")
         .help("disable autoloading std::lang module")
         .flag()
+    ;
+    argparser.add_argument("--list-targets")
+        .help("list all available targets and exit")
+        .flag()
+    ;
+    argparser.add_argument("--opt")
+        .help("choose optimizer preset [none|disable|all]")
+        .default_value<String>("all")
+    ;
+    argparser.add_argument("--opt:constant-folding")
+        .help("enable or disable constant folding optimization")
+        .default_value<String>("true")
+    ;
+    argparser.add_argument("--opt:chaos")
+        .help("enable or disable register chaos optimizer (good for pipelining) [W.I.P.]")
+        .default_value<String>("true")
     ;
 
     // try to parse arguments
@@ -65,6 +87,47 @@ int32 main(int32 argc, const char** argv){
         std::cerr << err.what() << std::endl;
         std::cerr << argparser;
         return EXIT_ARG_FAILURE;
+    }
+
+    // check optimizer features
+    if (argparser["--opt"] == "all"s) {
+        optimizer::do_constant_folding = true;
+    }
+    else if (argparser["--opt"] == "disable"s) {
+        optimizer::do_constant_folding = true;
+        optimizer::do_chaos = false;
+    }
+    else if (argparser["--opt"] == "none"s) {
+        optimizer::do_constant_folding = false;
+        optimizer::do_chaos = false;
+    }
+    else {
+        std::cerr << "\e[1;31mERROR:\e[0m --opt only allows options 'all', 'disable' and 'none'. Defaulting to none." << std::endl;
+    }
+    
+    if (argparser["--opt:constant-folding"] == "true"s) {
+        optimizer::do_constant_folding = true;
+    }
+    else if (argparser["--opt:constant-folding"] == "false"s) {
+        optimizer::do_constant_folding = false;
+    }
+    else {
+        std::cerr << "\e[1;31mERROR:\e[0m --opt:constant-folding only allows options 'true' and 'false'. Defaulting to true." << std::endl;
+    }
+
+    if (argparser["--opt:chaos"] == "true"s) {
+        optimizer::do_chaos = true;
+    }
+    else if (argparser["--opt:chaos"] == "false"s) {
+        optimizer::do_chaos = false;
+    }
+    else {
+        std::cerr << "\e[1;31mERROR:\e[0m --opt:chaos only allows options 'true' and 'false'. Defaulting to true." << std::endl;
+    }
+
+    if (argparser["--list-targets"] == true) {
+        target::list();
+        std::exit(0);
     }
 
     // check for std environment variable

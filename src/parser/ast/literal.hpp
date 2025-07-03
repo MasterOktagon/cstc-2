@@ -26,10 +26,9 @@ class IntLiteralAST : public LiteralAST {
     bool tsigned = true; //> whether this integer is signed
 
     protected:
-    String _str() { return "<Int: "s + value + " | " + std::to_string(bits) + ">"; }
+    String _str() const { return "<Int: "s + value + " | " + std::to_string(bits) + ">"; }
 
     public:
-    String value = "0"; // Integer value
     IntLiteralAST(int bits, String value, bool tsigned = true, std::vector<lexer::Token> tokens = {});
     virtual ~IntLiteralAST() {}
 
@@ -52,21 +51,18 @@ class IntLiteralAST : public LiteralAST {
 };
 
 class BoolLiteralAST : public LiteralAST {
-
-    bool value = false; //> boolean value
-
     protected:
-    String _str() { return "<Bool: "s + (value ? "true"s : "false"s) + ">"; }
+    String _str() const { return "<Bool: "s + value + ">"; }
 
     public:
-    BoolLiteralAST(bool value, std::vector<lexer::Token> tokens);
+    BoolLiteralAST(String value, std::vector<lexer::Token> tokens);
     virtual ~BoolLiteralAST() {}
 
     // fwd declarations @see @class AST
 
     CstType        getCstType() const { return "bool"; }
     LLType         getLLType() const { return "i1"; }
-    String         getValue() const { return std::to_string(value); }
+    String         getValue() const { return value; }
     virtual String emitLL(int*, String) const;
     virtual String emitCST() const;
 
@@ -82,11 +78,10 @@ class BoolLiteralAST : public LiteralAST {
 
 class FloatLiteralAST : public LiteralAST {
 
-    String value = "0"; //> Float value
     int    bits  = 32;  //> Float size (name)
 
     protected:
-    String _str() { return "<Float: "s + value + " | " + std::to_string(bits) + ">"; }
+    String _str() const { return "<Float: "s + value + " | " + std::to_string(bits) + ">"; }
 
     public:
     FloatLiteralAST(int bits, String value, std::vector<lexer::Token> tokens = {});
@@ -108,10 +103,8 @@ class FloatLiteralAST : public LiteralAST {
 
 class CharLiteralAST : public LiteralAST {
 
-    String value = "a"; //> Char value
-
     protected:
-    String _str() { return "<Char: '"s + value + "'>"; }
+    String _str() const { return "<Char: '"s + value + "'>"; }
 
     public:
     CharLiteralAST(String value, std::vector<lexer::Token> tokens);
@@ -134,10 +127,8 @@ class CharLiteralAST : public LiteralAST {
 
 class StringLiteralAST : public LiteralAST {
 
-    String value = "";
-
     protected:
-    String _str() { return "<String: \""s + value + "\">"; }
+    String _str() const { return "<String: \""s + value + "\">"; }
 
     public:
     StringLiteralAST(String value, std::vector<lexer::Token> tokens);
