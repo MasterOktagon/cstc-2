@@ -472,7 +472,7 @@ PowAST::PowAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
     };
 }
 
-PowAST::~PowAST(){};
+PowAST::~PowAST() = default;
 
 String PowAST::emitLL(int*, String) const { return ""; }
 
