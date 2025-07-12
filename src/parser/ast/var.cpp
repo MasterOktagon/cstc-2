@@ -1,5 +1,5 @@
 #include "var.hpp"
-#include "../../lexer/lexer.hpp"
+//#include "../../lexer/lexer.hpp"
 #include "../errors.hpp"
 #include "../parser.hpp"
 #include "../symboltable.hpp"
@@ -8,11 +8,11 @@
 #include "base_math.hpp"
 #include "literal.hpp"
 #include "type.hpp"
-#include <iostream>
+#include "../../debug/debug.hpp"
 #include <string>
 #include <vector>
 
-String parse_name(std::vector<lexer::Token> tokens) {
+String parse_name(lexer::TokenStream tokens) {
     if (tokens.size() == 0)
         return "";
     String             name = "";
@@ -20,28 +20,28 @@ String parse_name(std::vector<lexer::Token> tokens) {
 
     if (tokens[0].type == lexer::Token::Type::SUBNS) {
         parser::error("Expected Symbol", {tokens[0]}, "module name or variable name expected", 30);
-        return "";
+        return "null";
     }
-    for (lexer::Token t : tokens) {
+    for (lexer::Token t : tokens.tokens) {
         if (last == lexer::Token::Type::SUBNS && t.type == lexer::Token::Type::ID) {
             name += t.value;
         } else if (last == lexer::Token::Type::ID && t.type == lexer::Token::Type::SUBNS) {
             name += "::";
         } else
-            return "null";
+            return "";
         last = t.type;
     }
     if (last == lexer::Token::Type::SUBNS) {
         parser::error("Expected Symbol", {tokens[tokens.size() - 1]}, "module name or variable name expected", 30);
-        return "";
+        return "null";
     }
     return name;
 }
 
-sptr<AST> parseStatement(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type) {
+sptr<AST> parseStatement(lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type) {
     if (tokens.size() == 0 || tokens[tokens.size() - 1].type != lexer::Token::Type::END_CMD)
         return nullptr;
-    return math::parse(parser::subvector(tokens, 0, 1, tokens.size() - 1), local, sr, expected_type);
+    return math::parse(tokens.slice(0, 1, tokens.size() - 1), local, sr, expected_type);
 }
 
 VarDeclAST::VarDeclAST(String name, sptr<AST> type, symbol::Variable* v) {
@@ -54,7 +54,8 @@ String VarDeclAST::_str() const {
     return "<DECLARE "s + name + " : ?" + " MUT>";
 }
 
-sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
+sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mVarDeclAST::parse\e[0m");
     if (tokens.size() < 3)
         return nullptr;
     if (tokens[tokens.size() - 1].type == lexer::Token::Type::END_CMD) {
@@ -63,7 +64,7 @@ sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol:
         parser::Modifier m       = parser::getModifier(tokens);
         if (tokens[tokens.size() - 2].type == lexer::Token::Type::ID) {
             name           = tokens[tokens.size() - 2].value;
-            sptr<AST> type = Type::parse(parser::subvector(tokens, 0, 1, tokens.size() - 2), local, sr);
+            sptr<AST> type = Type::parse(tokens.slice(0, 1, tokens.size() - 2), local, sr);
             if (type != nullptr) {
                 // if (!parser::isAtomic(type->getCstType())){
                 //     parser::error("Unknown type", {tokens[0], tokens[tokens.size()-3]}, "A type of this name is
@@ -97,7 +98,7 @@ sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol:
                     return sptr<AST>(new AST);
                 }
 
-                symbol::Variable* v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
+                symbol::Variable* v     = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);
                 v->isConst              = m & parser::Modifier::CONST;
                 v->isMutable            = m & parser::Modifier::MUTABLE;
                 sr->add(name, v);
@@ -114,7 +115,7 @@ sptr<AST> VarDeclAST::parse(std::vector<lexer::Token> tokens, int local, symbol:
 String VarDeclAST::emitLL(int*, String) const { return v->getLLLoc() + " = alloca " + type->getLLType() + "\n"; }
 
 VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v,
-                         std::vector<lexer::Token> tokens) {
+                         lexer::TokenStream tokens) {
     this->name       = name;
     this->type       = type;
     this->expression = expr;
@@ -125,24 +126,25 @@ String VarInitlAST::_str() const {
     return "<DECLARE "s + name + " : " + type->getCstType() + " = " + str(expression.get()) + (v->isConst? " CONST"s : ""s) + (v->isMutable? " MUT"s : ""s) +  ">";
 }
 
-sptr<AST> VarInitlAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
+sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mVarInitlAST::parse\e[0m");
     if (tokens.size() < 5)
         return nullptr;
     if (tokens[tokens.size() - 1].type == lexer::Token::Type::END_CMD) {
         String           name    = "";
         auto             tokens2 = tokens;
         parser::Modifier m       = parser::getModifier(tokens);
-        int              split   = parser::rsplitStack(tokens, {lexer::Token::Type::SET}, local);
+        int64            split   = tokens.rsplitStack({lexer::Token::Type::SET});
         if (tokens[split - 1].type == lexer::Token::Type::ID && split > 1) {
             name           = tokens[split - 1].value;
-            sptr<AST> type = Type::parse(parser::subvector(tokens, 0, 1, split - 1), local, sr);
+            sptr<AST> type = Type::parse(tokens.slice(0, 1, split - 1), local, sr);
             if (type == nullptr) {
-                // parser::error("Expected type", {tokens[0], tokens[split-1]}, "Expected a type before the identifier",
+                 parser::error("Expected type", {tokens[0], tokens[split-1]}, "Expected a type before the identifier",0);
                 // 25);
                 return nullptr;
             }
             sptr<AST> expr =
-                math::parse(parser::subvector(tokens, split + 1, 1, tokens.size() - 1), local, sr, type->getCstType());
+                math::parse(tokens.slice(split + 1, 1, tokens.size() - 1), local, sr, type->getCstType());
             if (expr == nullptr) {
                 parser::error("Expected expression", {tokens[split + 1], tokens[tokens.size() - 1]},
                               "Expected an expression", 25);
@@ -181,7 +183,7 @@ sptr<AST> VarInitlAST::parse(std::vector<lexer::Token> tokens, int local, symbol
                 }
             }
             expr->forceType(type->getCstType());
-            auto v     = new symbol::Variable(name, type->getCstType(), tokens2, sr);
+            auto v     = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);
 
             if (m & parser::Modifier::CONST) {
                 if (!expr->is_const) {
@@ -217,7 +219,7 @@ String VarInitlAST::emitLL(int* locc, String) const {
     return l;
 }
 
-VarAccesAST::VarAccesAST(String name, symbol::Variable* sr, std::vector<lexer::Token> tokens) {
+VarAccesAST::VarAccesAST(String name, symbol::Variable* sr, lexer::TokenStream tokens) {
     this->name   = name;
     this->var    = sr;
     this->tokens = tokens;
@@ -231,14 +233,16 @@ String VarAccesAST::_str() const {
     return "<ACCES "s + name + (is_const ? "[="s + var->const_value + "]" : ""s) + ">";
 }
 
-sptr<AST> VarAccesAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace* sr, String) {
+sptr<AST> VarAccesAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mVarAccesAST::parse\e[0m");
     if (tokens.size() == 0)
         return nullptr;
     String name = parse_name(tokens);
+    DEBUG(5, "\tname: "s + name)
     if (name == "")
-        return share<AST>(new AST);
-    if (name == "null")
         return nullptr;
+    if (name == "null")
+        return share<AST>(new AST);
     if ((*sr)[name].size() == 0) {
         parser::error("Unknown variable", tokens, "A variable of this name was not found in this scope", 20);
         return share<AST>(new AST);
@@ -258,7 +262,7 @@ sptr<AST> VarAccesAST::parse(std::vector<lexer::Token> tokens, int, symbol::Name
             return share<AST>(new AST);
         }
         u = symbol::Variable::CONSUMED;
-        p->last = tokens;
+        p->last = tokens.tokens;
     }
     return share<AST>(new VarAccesAST(name, (symbol::Variable*) p, tokens));
 }
@@ -278,7 +282,7 @@ String VarAccesAST::emitLL(int* locc, String inp) const {
     return s + inp;
 }
 
-VarSetAST::VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, std::vector<lexer::Token> tokens) {
+VarSetAST::VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, lexer::TokenStream tokens) {
     this->name   = name;
     this->var    = sr;
     this->expr   = expr;
@@ -289,25 +293,26 @@ String VarSetAST::_str() const {
     return "<"s + name + " = " + str(expr.get()) + ">";
 }
 
-sptr<AST> VarSetAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String) {
+sptr<AST> VarSetAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mVarSetAST::parse\e[0m");
     if (tokens.size() == 0)
         return nullptr;
     String name  = "";
-    uint64 split = parser::rsplitStack(tokens, {lexer::Token::Type::SET}, local);
-    if (split == 0) {
+    lexer::TokenStream::Match split = tokens.rsplitStack({lexer::Token::Type::SET});
+    if (split.found() && (uint64)split == 0) {
         parser::error("Expected Expression", {tokens[tokens.size() - 1]}, "Expected an expression after '='", 31);
         return share<AST>(new AST);
     }
-    if (split == tokens.size())
+    if (!split.found())
         return nullptr;
-    auto varname = parser::subvector(tokens, 0, 1, split);
+    auto varname = split.before();
     name         = parse_name(varname);
     if (name == "") {
         parser::error("Expected Symbol", varname, "module name or variable name expected", 30);
         return nullptr;
     }
 
-    sptr<AST> expr = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr);
+    sptr<AST> expr = math::parse(split.after(), local, sr);
     if (expr == nullptr) {
         parser::error("Expected Expression", {tokens[tokens.size() - 1]}, "Expected a valid expression after '='", 31);
         return share<AST>(new AST);
@@ -335,17 +340,17 @@ sptr<AST> VarSetAST::parse(std::vector<lexer::Token> tokens, int local, symbol::
     if (p == dynamic_cast<symbol::Variable*>(p)){
         symbol::Variable::Status& u = ((symbol::Variable*) p)->used;
         if (u == symbol::Variable::PROVIDED) {
-            auto warn_error = parser::error;
+            fsignal<void, String, lexer::TokenStream, String, uint32, String> warn_error = parser::error;
             if (((symbol::Variable*) p)->isFree){
                 warn_error = parser::warn;
             }
 
             warn_error("Type linearity violated", tokens, "Variable '\e[1m"s + name + "\e[0m' was never consumed.\nMake sure the variable is consumed before it is provided.", 0, "");
             parser::note(p->last, "last provided here", 0);
-            return share<AST>(new AST);
+            if (warn_error == (fsignal<void, String, lexer::TokenStream, String, uint32, String>)parser::error) return share<AST>(new AST);
         }
         u = symbol::Variable::PROVIDED;
-        p->last = tokens;
+        p->last = tokens.tokens;
     }
     return share<AST>(new VarSetAST(name, (symbol::Variable*) p, expr, tokens));
 }

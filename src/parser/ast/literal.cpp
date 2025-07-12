@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <regex>
 #include <string>
+#include "../../debug/debug.hpp"
 
 bool StringIntBiggerThan(String a, String b) {
     if (a.size() > b.size())
@@ -29,7 +30,7 @@ bool StringIntBiggerThan(String a, String b) {
     return false;
 }
 
-IntLiteralAST::IntLiteralAST(int bits, String value, bool tsigned, std::vector<lexer::Token> tokens) {
+IntLiteralAST::IntLiteralAST(int bits, String value, bool tsigned, lexer::TokenStream tokens) {
     this->bits    = bits;
     this->value   = value;
     this->tsigned = tsigned;
@@ -59,7 +60,8 @@ String IntLiteralAST::emitLL(int*, String inp) const {
     return rinsert(value, inp);
 }
 
-sptr<AST> IntLiteralAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace*, String) {
+sptr<AST> IntLiteralAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mIntLiteralAST::parse\e[0m");
     if (tokens.size() < 1 || tokens.size() > 2)
         return nullptr;
     if (tokens[0].type == lexer::Token::Type::INT) {
@@ -98,7 +100,7 @@ void IntLiteralAST::forceType(String type) {
         parser::error("Type mismatch", tokens, "expected a \e[1m"s + type + "\e[0m, found int", 17, "Caused by");
 }
 
-BoolLiteralAST::BoolLiteralAST(String value, std::vector<lexer::Token> tokens) {
+BoolLiteralAST::BoolLiteralAST(String value, lexer::TokenStream tokens) {
     this->value  = value;
     this->tokens = tokens;
     is_const     = true;
@@ -107,7 +109,8 @@ BoolLiteralAST::BoolLiteralAST(String value, std::vector<lexer::Token> tokens) {
 String BoolLiteralAST::emitLL(int*, String inp) const { return rinsert(getValue(), inp); }
 
 String    BoolLiteralAST::emitCST() const { return value; }
-sptr<AST> BoolLiteralAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace*, String) {
+sptr<AST> BoolLiteralAST::parse(lexer::TokenStream tokens, int, symbol::Namespace*, String) {
+    DEBUG(4, "Trying \e[1mBoolLiteralAST::parse\e[0m");
     if (tokens.size() == 1) {
         if (tokens[0].value == "true" || tokens[0].value == "false") {
             return share<AST>(new BoolLiteralAST(tokens[0].value, tokens));
@@ -121,7 +124,7 @@ void BoolLiteralAST::forceType(String type) {
                       "Caused by");
 }
 
-FloatLiteralAST::FloatLiteralAST(int bits, String value, std::vector<lexer::Token> tokens) {
+FloatLiteralAST::FloatLiteralAST(int bits, String value, lexer::TokenStream tokens) {
     this->bits   = bits;
     this->value  = value;
     this->tokens = tokens;
@@ -143,14 +146,15 @@ LLType FloatLiteralAST::getLLType() const {
         return "fp128";
 }
 
-sptr<AST> FloatLiteralAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace*, String) {
+sptr<AST> FloatLiteralAST::parse(lexer::TokenStream tokens, int, symbol::Namespace*, String) {
+    DEBUG(4, "Trying \e[1mFloatLiteralAST::parse\e[0m");
     if (tokens.size() < 1)
         return nullptr;
     bool sig = false;
     auto t   = tokens;
     if (tokens[0].type == lexer::Token::Type::SUB || tokens[0].type == lexer::Token::Type::NEC) {
         sig    = true;
-        tokens = parser::subvector(tokens, 1, 1, tokens.size());
+        tokens = tokens.slice(1,1,-1);
     }
     if (tokens.size() < 2)
         return nullptr;
@@ -183,7 +187,7 @@ void FloatLiteralAST::forceType(String type) {
                       String("expected a \e[1m") + type + "\e[0m, found float" + std::to_string(bits), 17, "Caused by");
 }
 
-CharLiteralAST::CharLiteralAST(String value, std::vector<lexer::Token> tokens) {
+CharLiteralAST::CharLiteralAST(String value, lexer::TokenStream tokens) {
     this->value  = value;
     this->tokens = tokens;
     is_const     = true;
@@ -191,7 +195,8 @@ CharLiteralAST::CharLiteralAST(String value, std::vector<lexer::Token> tokens) {
 
 String CharLiteralAST::emitLL(int*, String inp) const { return rinsert(getValue(), inp); }
 
-sptr<AST> CharLiteralAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace*, String) {
+sptr<AST> CharLiteralAST::parse(lexer::TokenStream tokens, int, symbol::Namespace*, String) {
+    DEBUG(4, "Trying \e[1mCharLiteralAST::parse\e[0m");
     if (tokens.size() != 1)
         return nullptr;
     if (tokens[0].type == lexer::Token::Type::CHAR) {
@@ -250,13 +255,14 @@ void CharLiteralAST::forceType(String type) {
     }
 }
 
-StringLiteralAST::StringLiteralAST(String value, std::vector<lexer::Token> tokens) {
+StringLiteralAST::StringLiteralAST(String value, lexer::TokenStream tokens) {
     this->value  = value;
     this->tokens = tokens;
     is_const     = true;
 }
 
-sptr<AST> StringLiteralAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace*, String) {
+sptr<AST> StringLiteralAST::parse(lexer::TokenStream tokens, int, symbol::Namespace*, String) {
+    DEBUG(4, "Trying \e[1mStringLiteralAST::parse\e[0m");
     if (tokens.size() != 1)
         return nullptr;
     if (tokens[0].type == lexer::Token::Type::STRING) {

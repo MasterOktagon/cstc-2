@@ -149,9 +149,9 @@ lexer::Token::Type lexer::matchType(String c) {
     else if (c == "new"){ type = lexer::Token::Type::NEW; }
     else if (c == "virtual"){ type = lexer::Token::Type::VIRTUAL;
     }
-    // else if (c == "delete"){ type = lexer::Token::Type::DELETE; } // Not sure about this
+    else if (c == "delete"){ type = lexer::Token::Type::DELETE; } // Not sure about this
     else if (c == "operator"){ type = lexer::Token::Type::OPERATOR; }
-    else if (c == "operator"){ type = lexer::Token::Type::FINALLY; }
+    else if (c == "finally"){ type = lexer::Token::Type::FINALLY; }
     
     return type;
 }
@@ -193,7 +193,7 @@ lexer::Token::Type lexer::matchType(String c) {
  *
  * @return Vector of Tokens tokenized.
  */
-std::vector<lexer::Token> lexer::tokenize(String text, String filename) {
+lexer::TokenStream lexer::tokenize(String text, String filename) {
     std::vector<lexer::Token> tokens = {};          //> output Token vector
     uint64 col  = 0;                                //> current column
     uint64 line = 1;                                //> current line
@@ -248,7 +248,7 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename) {
             lexer::error("Unresolved merge conflict", {Token (lexer::Token::Type::NONE, "<<<<<<<< HEAD", line, col, filename, lc)}, "There is an unresolved git merge conflict in this file.\nTry\n \e[36m$\e[0m git mergetool\nfor help", -3);
             while (!std::regex_match(*lc, std::regex(">>>>>>> .*"))){ // move fwd until merge conflict end
                 i++; col++; c = text[i];
-                if (i >= text.size()) return {};
+                if (i >= text.size()) return TokenStream({});
                 updateVars();
             }
             while (i+1 < text.size() && text[i+1] != '\n') {i++; col++; c=text[i]; updateVars()}
@@ -303,7 +303,7 @@ std::vector<lexer::Token> lexer::tokenize(String text, String filename) {
         std::cerr << "\r\e[1;33mWARNING:\e[0m\e[1m " << filename << "\e[0m appears to be empty.\n";
     }
 
-    return tokens;
+    return TokenStream(tokens);
 }
 
 

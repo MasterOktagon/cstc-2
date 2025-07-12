@@ -54,7 +54,7 @@ namespace parser {
      *
      * @return An AST Node or nullptr if no match was found
      */
-    extern sptr<AST> parseOneOf(std::vector<lexer::Token> tokens, std::vector<PARSER_FN_NO_DEFAULT> functions, int local, symbol::Namespace* sr, String expected_type);
+    extern sptr<AST> parseOneOf(lexer::TokenStream tokens, std::vector<PARSER_FN_NO_DEFAULT> functions, int local, symbol::Namespace* sr, String expected_type);
 
     /**
      * @brief get a (new) subvector from another vector
@@ -90,7 +90,7 @@ namespace parser {
     /**
      * @brief get one or more modifiers from a list of tokens and REMOVE THEM FROM THE VECTOR
     */
-    extern Modifier getModifier(std::vector<lexer::Token>& tokens);
+    extern Modifier getModifier(lexer::TokenStream& tokens);
 
     extern LLType LLType(CstType, symbol::Reference* sr = nullptr);
 }

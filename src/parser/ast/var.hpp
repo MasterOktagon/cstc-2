@@ -5,7 +5,7 @@
 #include "base_math.hpp"
 
 sptr<AST> parseStatement(PARSER_FN);
-extern String parse_name(std::vector<lexer::Token>);
+extern String parse_name(lexer::TokenStream);
 
 class VarDeclAST : public AST {
 
@@ -42,7 +42,7 @@ class VarInitlAST : public AST {
     String _str() const;
 
     public:
-    VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v, std::vector<lexer::Token> tokens);
+    VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v, lexer::TokenStream tokens);
     virtual bool isConst(){return false;} // do constant folding or not
     virtual ~VarInitlAST(){};
     virtual uint64 nodeSize() const {return expression->nodeSize() + 1;} // how many nodes to to do
@@ -65,7 +65,7 @@ class VarAccesAST : public AST {
     String _str() const;
 
     public:
-    VarAccesAST(String name, symbol::Variable* sr, std::vector<lexer::Token> tokens);
+    VarAccesAST(String name, symbol::Variable* sr, lexer::TokenStream tokens);
     virtual bool isConst(){return false;} // do constant folding or not
     virtual ~VarAccesAST(){}
     virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
@@ -89,7 +89,7 @@ class VarSetAST : public ExpressionAST {
     String _str() const;
 
     public:
-    VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, std::vector<lexer::Token> tokens);
+    VarSetAST(String name, symbol::Variable* sr, sptr<AST> expr, lexer::TokenStream tokens);
     virtual bool isConst(){return false;} // do constant folding or not
     virtual ~VarSetAST(){};
     virtual uint64 nodeSize() const {return expr->nodeSize() + 1;} // how many nodes to to do

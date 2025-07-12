@@ -107,7 +107,7 @@ class Module final : public symbol::Namespace {
 /**
  * @brief get a symbol list for an import. Meta-function. Prefer not to use.
 */
-extern std::optional<std::vector<String>> getImportList(std::vector<lexer::Token>);
+extern std::optional<std::vector<String>> getImportList(lexer::TokenStream);
 
 
 

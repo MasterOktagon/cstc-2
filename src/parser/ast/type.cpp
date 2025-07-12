@@ -9,7 +9,7 @@ TypeAST::TypeAST(String name){
     this->name = name;
 }
 
-sptr<AST> TypeAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespace*, String){
+sptr<AST> TypeAST::parse(PARSER_FN_PARAM){
     if (tokens.size() != 1) return nullptr;
     if (tokens[0].type == lexer::Token::Type::ID) {
         return share<AST>(new TypeAST(tokens[0].value));
@@ -17,7 +17,7 @@ sptr<AST> TypeAST::parse(std::vector<lexer::Token> tokens, int, symbol::Namespac
     return nullptr;
 }
 
-sptr<AST> Type::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String expected_type){
+sptr<AST> Type::parse(PARSER_FN_PARAM){
         return parser::parseOneOf(tokens, {
             OptionalTypeAST::parse,
             TypeAST::parse
@@ -29,10 +29,10 @@ OptionalTypeAST::OptionalTypeAST(sptr<TypeAST> t){
     this->type = t;
 }
 
-sptr<AST> OptionalTypeAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace* sr, String){
+sptr<AST> OptionalTypeAST::parse(PARSER_FN_PARAM){
     if (tokens.size() < 2) return nullptr;
-    if (tokens.at(tokens.size()-1).type == lexer::Token::Type::QM) {
-        sptr<AST> t = Type::parse(parser::subvector(tokens, 0,1,tokens.size()-1), local, sr);
+    if (tokens[tokens.size()-1].type == lexer::Token::Type::QM) {
+        sptr<AST> t = Type::parse(tokens.slice(0,1,tokens.size()-1), local, sr);
         if (t == nullptr){
             return nullptr;
         }

@@ -1,6 +1,7 @@
 
 
 mut uint8 a;
+a = 2 * 1;
 uint8 b = 2**3 * 4 - 2;
 const uint8 c = uint8::MAX_VALUE - 1;
 a = c + 1;

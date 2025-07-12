@@ -10,8 +10,9 @@
 #include "../../lexer/token.hpp"
 #include <vector>
 
-#define PARSER_FN std::vector<lexer::Token>, int local, symbol::Namespace* sr, String expected_type="@unknown" //> used to template all parser functions
-#define PARSER_FN_NO_DEFAULT fsignal<sptr<AST>, std::vector<lexer::Token>, int, symbol::Namespace*, String>
+#define PARSER_FN lexer::TokenStream, int local, symbol::Namespace* sr, String expected_type="@unknown" //> used to template all parser functions
+#define PARSER_FN_PARAM lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type
+#define PARSER_FN_NO_DEFAULT fsignal<sptr<AST>, lexer::TokenStream, int, symbol::Namespace*, String>
 
 /**
  * @class represents an AST node
@@ -23,7 +24,7 @@ class AST : public Repr {
          * @brief debug represenstation
          */
         virtual String _str() const;
-        std::vector<lexer::Token> tokens; //> Tokens of this AST Node. these are mostly used for error messages
+        lexer::TokenStream tokens = lexer::TokenStream({}); //> Tokens of this AST Node. these are mostly used for error messages
 
     public:
         /**
@@ -33,9 +34,9 @@ class AST : public Repr {
         String value;          //> value, used for several purposes
         bool is_const = false; //> whether this is const and should be tried to be substituted in.
 
-        virtual ~AST() {};
+        virtual ~AST() = default;
 
-        std::vector<lexer::Token> getTokens() const {return tokens;}
+        lexer::TokenStream getTokens() const {return tokens;}
 
         /**
          * @brief get the LLVM IR type representation of this Nodes return type

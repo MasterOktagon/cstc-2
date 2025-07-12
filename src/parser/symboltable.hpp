@@ -67,12 +67,11 @@ namespace symbol {
         Status used = UNINITIALIZED;
         bool   isFree  = false;
         String  const_value;
-        Variable(String name, LLType type, std::vector<lexer::Token> tokens, symbol::Reference* parent) : type(std::move(type)), name(name)
-            {loc = name; this->tokens = tokens; last=tokens; this->parent=parent;}
+        Variable(String name, LLType type, std::vector<lexer::Token> tokens, symbol::Reference* parent)
+            {loc = name; this->tokens = tokens; last=tokens; this->parent=parent; this->name=name; this->type=type;}
         virtual ~Variable(){};
-        virtual String _str() const {
-            return "symbol::Variable "s + getLoc();
-        }
+        virtual String _str() const { return "symbol::Variable "s + getLoc(); }
+        String getVarName() const { return name;}
         virtual LLType getLLType(){return "void"s;}
         virtual void add(String, Reference*){}
         virtual CstType getCstType(){return type;}

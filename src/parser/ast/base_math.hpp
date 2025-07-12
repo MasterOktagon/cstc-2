@@ -94,7 +94,7 @@ class UnaryOperandAST : public ExpressionAST {
 class AddAST : public DoubleOperandAST {
 
     public:
-    AddAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    AddAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~AddAST();
 
     // fwd declarations. @see @class AST 
@@ -115,7 +115,7 @@ class AddAST : public DoubleOperandAST {
 class SubAST : public DoubleOperandAST {
 
     public:
-    SubAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    SubAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~SubAST();
 
     // fwd declarations. @see @class AST 
@@ -129,7 +129,7 @@ class SubAST : public DoubleOperandAST {
 class MulAST : public DoubleOperandAST {
 
     public:
-    MulAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    MulAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~MulAST();
 
     // fwd declarations. @see @class AST 
@@ -150,7 +150,7 @@ class MulAST : public DoubleOperandAST {
 class DivAST : public DoubleOperandAST {
 
     public:
-    DivAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    DivAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~DivAST();
 
     // fwd declarations. @see @class AST 
@@ -164,7 +164,7 @@ class DivAST : public DoubleOperandAST {
 class ModAST : public DoubleOperandAST {
 
     public:
-    ModAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    ModAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~ModAST();
 
     // fwd declarations. @see @class AST 
@@ -178,7 +178,7 @@ class ModAST : public DoubleOperandAST {
 class PowAST : public DoubleOperandAST {
 
     public:
-    PowAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    PowAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~PowAST();
 
     // fwd declarations. @see @class AST 
@@ -198,7 +198,7 @@ class PowAST : public DoubleOperandAST {
  */
 class LorAST : public DoubleOperandAST {
     public:
-    LorAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    LorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~LorAST();
 
     // fwd declarations. @see @class AST 
@@ -218,7 +218,7 @@ class LorAST : public DoubleOperandAST {
  */
 class LandAST : public DoubleOperandAST {
     public:
-    LandAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    LandAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~LandAST();
 
     // fwd declarations. @see @class AST 
@@ -238,7 +238,7 @@ class LandAST : public DoubleOperandAST {
  */
 class OrAST : public DoubleOperandAST {
     public:
-    OrAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    OrAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~OrAST() = default;
 
     // fwd declarations. @see @class AST 
@@ -258,7 +258,7 @@ class OrAST : public DoubleOperandAST {
  */
 class AndAST : public DoubleOperandAST {
     public:
-    AndAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    AndAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~AndAST() = default;
 
     // fwd declarations. @see @class AST 
@@ -278,7 +278,7 @@ class AndAST : public DoubleOperandAST {
  */
 class XorAST : public DoubleOperandAST {
     public:
-    XorAST(sptr<AST> left, sptr<AST> right, std::vector<lexer::Token> tokens);
+    XorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
     virtual ~XorAST() = default;
 
     // fwd declarations. @see @class AST 
@@ -298,7 +298,7 @@ class XorAST : public DoubleOperandAST {
  */
 class NotAST : public UnaryOperandAST {
     public:
-    NotAST(sptr<AST> inner, std::vector<lexer::Token> tokens);
+    NotAST(sptr<AST> inner, lexer::TokenStream tokens);
     virtual ~NotAST() = default;
 
     // fwd declarations. @see @class AST 
@@ -317,7 +317,7 @@ class NotAST : public UnaryOperandAST {
  */
 class NegAST : public UnaryOperandAST {
     public:
-    NegAST(sptr<AST> inner, std::vector<lexer::Token> tokens);
+    NegAST(sptr<AST> inner, lexer::TokenStream tokens);
     virtual ~NegAST() = default;
 
     // fwd declarations. @see @class AST 
@@ -340,7 +340,7 @@ class CastAST : public ExpressionAST {
     sptr<AST> type;
 
     public:
-    CastAST(sptr<AST> from, sptr<AST> type, std::vector<lexer::Token> tokens);
+    CastAST(sptr<AST> from, sptr<AST> type, lexer::TokenStream tokens);
     virtual ~CastAST(){};
 
     // fwd declarations. @see @class AST 
@@ -369,7 +369,7 @@ class CheckAST : public ExpressionAST {
     sptr<AST> of;
 
     public:
-    CheckAST(sptr<AST> of, std::vector<lexer::Token> tokens){this->of = of; this->tokens = tokens;}
+    CheckAST(sptr<AST> of, lexer::TokenStream tokens){this->of = of; this->tokens = tokens;}
     virtual ~CheckAST(){};
 
     // fwd declarations. @see @class AST
@@ -384,6 +384,35 @@ class CheckAST : public ExpressionAST {
     virtual String emitLL(int*, String) const;
 
     String emitCST() const { return of->emitCST() + "?"; }
+    
+    void forceType(CstType type);
+
+    /**
+     * @brief parse a cast
+     * 
+     * @return AST or nullptr if no match
+     */
+    static sptr<AST> parse(PARSER_FN);
+};
+
+class NoWrapAST : public AST {
+    sptr<AST> of;
+
+    public:
+    NoWrapAST(sptr<AST> of, lexer::TokenStream tokens){this->of = of; this->tokens = tokens;}
+    virtual ~NoWrapAST(){};
+
+    // fwd declarations. @see @class AST
+    
+    CstType getCstType() const {
+        return of->getCstType();
+    }
+    LLType getLLType() const { return of->getLLType(); }
+
+    virtual uint64 nodeSize() const {return of->nodeSize()+1;} // how many nodes to to do
+    virtual String emitLL(int*, String s) const {return s;}
+
+    String emitCST() const { return "nowrap{ "s + of->emitCST() + " }"; }
     
     void forceType(CstType type);
 

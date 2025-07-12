@@ -7,6 +7,8 @@
 //
 
 #include "../snippets.h"
+#include <initializer_list>
+#include <vector>
 
 namespace lexer {
     class Token : public Repr {
@@ -14,7 +16,7 @@ namespace lexer {
      * @class Holds functions adding to the tokenizing features
     */
         protected:
-        virtual String _str();
+        virtual String _str() const;
 
         public:
         enum Type {
@@ -125,7 +127,8 @@ namespace lexer {
             NAMESPACE ,
             NEW       ,
             FINALLY   ,
-            DELETE   
+            DELETE    ,
+            NOWRAP   
         };
 
         Type type;     //> this tokens type
@@ -142,10 +145,77 @@ namespace lexer {
         bool operator == (Token& other);
     };
 
-    String getTokenName(Token::Type);
     /**
-     * get a TokenType's Name as String
+     * @brief get a TokenType's Name as String
      */
+    String getTokenName(Token::Type);
+
+    class TokenStream final : public Repr {
+        
+        public:
+        std::vector<Token> tokens;
+
+        protected:
+        String _str() const {
+            String s;
+            for (Token t : tokens) {
+                s += t.value + " ";
+            }
+            return s;
+        }
+
+        public:
+        class Match final {
+            uint64 at = 0;
+            bool   was_found = false;
+            const TokenStream* on = nullptr;
+
+            public:
+            Match(uint64 at, bool found, const TokenStream* on) {
+                this->at = at;
+                this->was_found = found;
+                this->on = on;
+            }
+            ~Match() = default;
+
+            inline bool found() const { return was_found; }
+            TokenStream before() const { return found() ? on->slice(0, 1, at) : TokenStream({}); }
+            TokenStream after() const { return found() ? on->slice(at + 1, 1, on->size()) : TokenStream({}); }
+
+            operator uint64() { return at; }
+            operator int64() { return at; }
+            operator bool() {
+                return was_found;
+            }
+        };
+        
+        TokenStream(std::vector<Token> tokens){this->tokens = tokens;}
+
+        TokenStream slice(int64 start, int64 step, int64 stop) const;
+
+        TokenStream getTS(int64 idx) {
+            if (idx < 0)
+                idx += size();
+            return TokenStream({tokens.at(idx)});
+        }
+
+        Token operator[](int64 idx) const {
+            if (idx < 0)
+                idx += size();
+            return tokens.at(idx);
+        }
+        inline uint64 size() const noexcept { return tokens.size(); }
+
+        Match splitStack(std::initializer_list<lexer::Token::Type>, uint64 start_idx=0) const;
+        Match rsplitStack(std::initializer_list<lexer::Token::Type>, uint64 start_idx=0) const;
+
+        Match split(std::initializer_list<lexer::Token::Type>, uint64 start_idx=0) const;
+        Match rsplit(std::initializer_list<lexer::Token::Type>, uint64 start_idx=0) const;
+
+        inline Match operator [] (lexer::Token::Type type){return split({type});}
+
+        inline bool empty() const { return size() == 0; }
+    };
 }
 
 const lexer::Token nullToken = lexer::Token(lexer::Token::NONE, "", 0, 0, "", nullptr);

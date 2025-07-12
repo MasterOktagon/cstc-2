@@ -30,24 +30,24 @@ AST* StructAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Names
 }*/
 
 
-sptr<AST> EnumAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Namespace *sr, String expected_type){
+sptr<AST> EnumAST::parse(PARSER_FN_PARAM){
     if (tokens.size() == 0) return nullptr;
-    if (tokens.at(0).type == lexer::Token::Type::ENUM){
+    if (tokens[0].type == lexer::Token::Type::ENUM){
         if (tokens.size() == 1){
             parser::error("Identifier expected", {tokens[0]}, "Expected an identifier after 'enum'", 50);
             return share<AST>(new AST);
         }
-        if (tokens.at(1).type == lexer::Token::ID){
-            String name = tokens.at(1).value;
+        if (tokens[1].type == lexer::Token::ID){
+            String name = tokens[1].value;
             if (tokens.size() == 2){
                 parser::error("Expected Block Open", {tokens[1]}, "Expected a Block open after this token", 51);
                 return share<AST>(new AST);
             }
-            if (tokens.at(2).type != lexer::Token::Type::BLOCK_OPEN){
+            if (tokens[2].type != lexer::Token::Type::BLOCK_OPEN){
                 parser::error("Expected Block Open", {tokens[2]}, "Expected a Block open", 51);
                 return share<AST>(new AST);
             }
-            if (tokens.at(tokens.size()-1).type != lexer::Token::Type::BLOCK_CLOSE){
+            if (tokens[tokens.size()-1].type != lexer::Token::Type::BLOCK_CLOSE){
                 parser::error("Expected Block Close", {tokens[2]}, "Expected a Block close at the End of this statement", 52);
                 return share<AST>(new AST);
             }
@@ -55,7 +55,7 @@ sptr<AST> EnumAST::parse(std::vector<lexer::Token> tokens, int local, symbol::Na
             // TODO
 
             if (!parser::IsCamelCase(name)){
-                parser::warn("Wrong casing", {tokens.at(1)}, "Enum name should be CamelCase.", 16);
+                parser::warn("Wrong casing", {tokens[1]}, "Enum name should be CamelCase.", 16);
             }
 
             sr->add(name, new symbol::Enum(name));

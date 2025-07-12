@@ -65,7 +65,7 @@ class EnumAST : public AST {
     }
 
     public:
-    EnumAST(String name, std::vector<lexer::Token> tokens={}){
+    EnumAST(String name, lexer::TokenStream tokens){
         this->name = name;
         this->tokens = tokens;
     }

@@ -7,8 +7,10 @@
 #include "errors.hpp"
 #include "../lexer/token.hpp"
 #include "../snippets.h"
+#include "ast/ast.hpp"
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 
 
 uint64 parser::errc = 0;
@@ -17,7 +19,7 @@ bool parser::one_error = false;
 
 void parser::showError(String errstr, String errcol, String errcol_lite, String name, String msg, std::vector<lexer::Token> tokens, uint32 code, String appendix){
     if (tokens.size() == 0) {
-        std::cerr << "OH NO! Error could not be displayed\n";
+        std::cerr << "OH NO! " << errstr << " " << name << " could not be displayed:\n" << intab(msg) << "\n";
         return;
     }
     String location;
@@ -53,12 +55,26 @@ void parser::showError(String errstr, String errcol, String errcol_lite, String 
     std::cerr << appendix << std::endl;
 }
 
+void parser::error(String name, lexer::TokenStream tokens, String msg, uint32 code, String appendix){
+    showError("ERROR", "\e[1;31m", "\e[31m", name, msg, tokens.tokens, code, appendix);
+    errc++;
+    if (one_error){
+        std::exit(3);
+    }
+}
 void parser::error(String name, std::vector<lexer::Token> tokens, String msg, uint32 code, String appendix){
     showError("ERROR", "\e[1;31m", "\e[31m", name, msg, tokens, code, appendix);
     errc++;
     if (one_error){
         std::exit(3);
     }
+}
+void parser::warn(String name, lexer::TokenStream tokens, String msg, uint32 code, String appendix){
+    showError("WARNING", "\e[1;33m", "\e[33m", name, msg, tokens.tokens, code, appendix);
+    warnc++;
+}
+void parser::note(lexer::TokenStream tokens, String msg, uint32 code, String appendix){
+    showError("NOTE", "\e[1;36m", "\e[36m", "", msg, tokens.tokens, code, appendix);
 }
 void parser::warn(String name, std::vector<lexer::Token> tokens, String msg, uint32 code, String appendix){
     showError("WARNING", "\e[1;33m", "\e[33m", name, msg, tokens, code, appendix);

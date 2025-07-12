@@ -29,7 +29,7 @@ class IntLiteralAST : public LiteralAST {
     String _str() const { return "<Int: "s + value + " | " + std::to_string(bits) + ">"; }
 
     public:
-    IntLiteralAST(int bits, String value, bool tsigned = true, std::vector<lexer::Token> tokens = {});
+    IntLiteralAST(int bits, String value, bool tsigned, lexer::TokenStream tokens);
     virtual ~IntLiteralAST() {}
 
     // fwd declarations @see @class AST
@@ -55,7 +55,7 @@ class BoolLiteralAST : public LiteralAST {
     String _str() const { return "<Bool: "s + value + ">"; }
 
     public:
-    BoolLiteralAST(String value, std::vector<lexer::Token> tokens);
+    BoolLiteralAST(String value, lexer::TokenStream tokens);
     virtual ~BoolLiteralAST() {}
 
     // fwd declarations @see @class AST
@@ -84,7 +84,7 @@ class FloatLiteralAST : public LiteralAST {
     String _str() const { return "<Float: "s + value + " | " + std::to_string(bits) + ">"; }
 
     public:
-    FloatLiteralAST(int bits, String value, std::vector<lexer::Token> tokens = {});
+    FloatLiteralAST(int bits, String value, lexer::TokenStream tokens);
     virtual ~FloatLiteralAST() {}
     CstType        getCstType() const { return "float"s + std::to_string(bits); }
     LLType         getLLType() const;
@@ -107,7 +107,7 @@ class CharLiteralAST : public LiteralAST {
     String _str() const { return "<Char: '"s + value + "'>"; }
 
     public:
-    CharLiteralAST(String value, std::vector<lexer::Token> tokens);
+    CharLiteralAST(String value, lexer::TokenStream tokens);
     virtual ~CharLiteralAST() {}
     CstType        getCstType() const { return "char"; }
     LLType         getLLType() const { return "i16"; };
@@ -131,7 +131,7 @@ class StringLiteralAST : public LiteralAST {
     String _str() const { return "<String: \""s + value + "\">"; }
 
     public:
-    StringLiteralAST(String value, std::vector<lexer::Token> tokens);
+    StringLiteralAST(String value, lexer::TokenStream tokens);
     virtual ~StringLiteralAST() {}
     CstType getCstType() const { return "String"; }
     LLType  getLLType() const { return "%std..lang..class.String"; };

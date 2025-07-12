@@ -19,7 +19,7 @@ namespace lexer {
      *
      * @return Vector of Tokens tokenized.
      */
-    extern std::vector<Token> tokenize(String text, String filename);
+    extern TokenStream tokenize(String text, String filename);
 
     /**
      * @brief try to fit a delimiting token into a single-char buffer

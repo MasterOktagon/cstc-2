@@ -28,6 +28,7 @@
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <sys/types.h>
 #include <utility>
 #include <vector>
 
@@ -233,14 +234,14 @@ bool Module::loadOrder(Module *a, Module *b){
 /**
  * @brief get a symbol list for an import. Meta-function. Prefer not to use.
 */
-std::optional<std::vector<String>> getImportList(std::vector<lexer::Token> t) {
+std::optional<std::vector<String>> getImportList(lexer::TokenStream t) {
     if (t.size() == 0)
         return {};
     std::vector<String> out = {};
 
     lexer::Token::Type last = lexer::Token::Type::COMMA;
 
-    for (lexer::Token tok : t) {
+    for (lexer::Token tok : t.tokens) {
         if (tok.type == lexer::Token::Type::COMMA) {};
         if (tok.type == lexer::Token::Type::ID) {
             if (last == lexer::Token::Type::COMMA) {
@@ -263,7 +264,7 @@ void Module::preprocess(){
         String content((std::istreambuf_iterator<char>(f) ),
                        (std::istreambuf_iterator<char>()));
 
-        tokens = lexer::tokenize(content, cst_file);
+        tokens = lexer::tokenize(content, cst_file).tokens;
         //std::cout << "\r" << module_name << ": " <<std::endl;
         //std::cout << tokens.size() << std::endl;
         //for (lexer::Token t : tokens){
@@ -394,12 +395,12 @@ void Module::parse(){
         for (sptr<AST> a : std::dynamic_pointer_cast<SubBlockAST>(root)->contents) {
             if (instanceOf(a, FuncCallAST)) {
                 auto r = std::dynamic_pointer_cast<FuncCallAST>(a);
-                auto warn_error = parser::error;
+                fsignal<void, String, std::vector<lexer::Token>, String, uint32, String> warn_error = parser::error;
                 if (r->getCstType() == "void") continue;
                 if (parser::isAtomic(r->getCstType())) {
                     warn_error = parser::warn;
                 }
-                warn_error("Type linearity violated",r->getTokens(),"return values of this function are discarded",0,"");
+                warn_error("Type linearity violated",r->getTokens().tokens,"return values of this function are discarded",0,"");
             }
         }
     }
@@ -408,7 +409,7 @@ void Module::parse(){
         if (sr.second.at(0) == dynamic_cast<symbol::Variable*>(sr.second.at(0))){
             auto var = (symbol::Variable*)sr.second.at(0);
             // if (parser::isAtomic(var->getCstType())) continue;
-            if (var->getName()[0] == '_') continue;
+            if (var->getVarName()[0] == '_') continue;
             if (var->used == symbol::Variable::PROVIDED){
                 parser::warn("Unconsumed Variable", var->last, "This variable was provided, but never consumed.\nIf this was intended, prefix it with an '_'.", 0);
             }
