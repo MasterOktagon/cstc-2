@@ -142,7 +142,7 @@ namespace lexer {
         Token() = default;
         virtual ~Token();
 
-        bool operator == (Token& other);
+        bool operator == (Token other);
     };
 
     /**

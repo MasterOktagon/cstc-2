@@ -395,9 +395,14 @@ class CheckAST : public ExpressionAST {
     static sptr<AST> parse(PARSER_FN);
 };
 
-class NoWrapAST : public AST {
+class NoWrapAST : public ExpressionAST {
     sptr<AST> of;
 
+    protected:
+    String _str() const {
+        return "<NOWRAP "s + str(of.get()) + ">";
+    }
+    
     public:
     NoWrapAST(sptr<AST> of, lexer::TokenStream tokens){this->of = of; this->tokens = tokens;}
     virtual ~NoWrapAST(){};
@@ -412,12 +417,12 @@ class NoWrapAST : public AST {
     virtual uint64 nodeSize() const {return of->nodeSize()+1;} // how many nodes to to do
     virtual String emitLL(int*, String s) const {return s;}
 
-    String emitCST() const { return "nowrap{ "s + of->emitCST() + " }"; }
+    String emitCST() const { return "nowrap("s + of->emitCST() + ")"; }
     
     void forceType(CstType type);
 
     /**
-     * @brief parse a cast
+     * @brief parse a nowrap call
      * 
      * @return AST or nullptr if no match
      */

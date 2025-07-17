@@ -6,14 +6,17 @@
 #include "../symboltable.hpp"
 #include "ast.hpp"
 #include "base_math.hpp"
+#include "type.hpp"
 #include "var.hpp"
+#include <map>
 #include <string>
 #include <sys/types.h>
 #include <vector>
-
+#include "../../debug/debug.hpp"
 //#define DEBUG
 
 sptr<AST> FuncCallAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mFuncCallAST::parse\e[0m");
     if (tokens.size() < 3)
         return nullptr;
 
@@ -234,3 +237,77 @@ String FuncCallAST::emitCST() const {
     s += ")";
     return s;
 }
+
+sptr<AST> FuncDefAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mFuncDefAST::parse\e[0m");
+    if (tokens.size() < 3)
+        return nullptr;
+    //parser::Modifier modifiers = parser::getModifier(tokens);
+    lexer::TokenStream::Match m = tokens.rsplitStack({lexer::Token::OPEN});
+    if (m.found()) {
+        lexer::TokenStream t = m.before();
+        if (t[-1].type != lexer::Token::ID) {
+            return nullptr;
+        }
+        lexer::TokenStream::Match start = m.after().rsplitStack({lexer::Token::BLOCK_OPEN});
+        if (!start.found()){
+            return nullptr;
+        }
+        String name = t[-1].value;
+
+        DEBUG(2, "FuncDefAST::parse");
+
+        sptr<AST> type = Type::parse(t.slice(0, 1, -1), local, sr);
+        if (type == nullptr) {
+            parser::error("Type expected", t.slice(0, 1, -1), "Exptected a valid type name", 0);
+            return ERR;
+        }
+        // require a closing ')'. No error is thrown since rsplitstack should error already (TODO confirm this)
+        if (start.before()[-1].type != lexer::Token::CLOSE) {
+            return ERR;
+        }
+
+        std::vector<String> parameters = {}; //> List of all parameters
+        std::map<String, CstType> named_parameters = {}; //> List of all positional parameters
+
+        // parse function parameters
+        lexer::TokenStream param = start.before().slice(0, 1, -1);
+        lexer::TokenStream param_buffer({});
+        lexer::Token last_named = nullToken; //> last positional argument name for debugging and erroring
+        while (!param.empty()) {
+            lexer::TokenStream::Match m = param.rsplitStack({lexer::Token::COMMA});
+            if (m.found()) {
+                param_buffer = m.before();
+                param = m.after();
+            } else {
+                param_buffer = param;
+                param.tokens = {};
+            }
+            m = param_buffer.rsplitStack({lexer::Token::SET});
+            String pname;
+            if (m.found()) {
+                last_named = param_buffer[(uint64)m - 1];
+                pname      = last_named.value;
+
+                sptr<AST> type = Type::parse(m.before().slice(0, 1, -1), local, sr);
+                // TODO
+                
+            } else {
+                
+                if (!(last_named == nullToken)) {
+                    parser::error("positional parameter after named parameter", param,
+                                  "This parameter does not have a default initializer (and is therefore "
+                                  "positional),\nbut was created behind a named parameter",
+                                  0);
+                    parser::note({last_named}, "because of this parameter", 0);
+                }
+            }
+        }
+    }
+    
+    return nullptr;
+}
+
+
+
+

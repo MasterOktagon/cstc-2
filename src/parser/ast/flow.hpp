@@ -45,7 +45,7 @@ class IfAST : public AST {
     sptr<SubBlockAST> block;
     sptr<AST> cond;
 
-    IfAST(){}
+    IfAST(sptr<SubBlockAST> block, sptr<AST> cond, lexer::TokenStream t){tokens = t; this->block=block; this->cond = cond;}
     virtual ~IfAST() {}
 
     // fwd declarations @see @class AST
@@ -53,11 +53,11 @@ class IfAST : public AST {
     virtual bool isConst(){return false;}
     //virtual String emitLL(int* locc, String inp) const;
 
-    virtual String emitCST() const;
+    virtual String emitCST() const {return "if "s + cond->emitCST() + " {\n" + intab(block->emitCST()) + "\n}\n";};
     
     virtual CstType getCstType() const {return "void";}
     virtual LLType  getLLTtype() const { return ""; }
-    virtual uint64 nodeSize() const { return block->contents.size();};
+    virtual uint64 nodeSize() const { return block->contents.size()+1;};
     virtual void forceType(CstType){}
 
     /**

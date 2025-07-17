@@ -170,54 +170,6 @@ sptr<AST> AddAST::parse(PARSER_FN_PARAM) {
 
         
     }
-
-    /*if (tokens.size() < 1)
-        return nullptr;
-
-    auto t = tokens; //> used to chache the original tokens
-
-    lexer::Token first;                //> first token
-    bool         first_is_sub = false; //> first token is SUB cache
-
-    // first token is SUB => negation (TODO)
-    if (tokens[0].type == lexer::Token::Type::SUB) {
-        first        = tokens[0];
-        first_is_sub = true;
-        tokens       = tokens.slice(1, 1, tokens.size());
-    }
-
-    // find position of operator
-    size_t split = parser::splitStack(tokens, {lexer::Token::Type::ADD, lexer::Token::Type::SUB}, local);
-    if (first_is_sub)
-        tokens.insert(tokens.begin(), first);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size() - 1) {
-#ifdef DEBUG
-        std::cout << "AddAST::parse:\tfirst_is_sub:\t" << first_is_sub << std::endl;
-        std::cout << "AddAST::parse:\tvalue size:\t" << tokens.size() << std::endl;
-        std::cout << "AddAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-
-        lexer::Token& op = tokens[split + first_is_sub]; //> operator token
-        sptr<AST> left   = math::parse(parser::subvector(tokens, 0, 1, split + first_is_sub), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split + first_is_sub - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + first_is_sub + 1, 1, tokens.size()), local, sr,
-                                      expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split + first_is_sub], tokens[tokens.size() - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        if (op.type == lexer::Token::Type::ADD)
-            return share<AST>(new AddAST(left, right, t));
-
-        else if (op.type == lexer::Token::Type::SUB)
-            return share<AST>(new SubAST(left, right, t));
-    }*/
-
     return nullptr;
 }
 
@@ -333,38 +285,6 @@ sptr<AST> MulAST::parse(PARSER_FN_PARAM) {
         else if (op.type == lexer::Token::Type::MOD)
             return share<AST>(new DivAST(left, right, tokens));
     }
-
-
-    /*if (tokens.size() < 1)
-        return nullptr;
-    auto   t = tokens;
-    size_t split =
-        parser::splitStack(tokens, {lexer::Token::Type::MUL, lexer::Token::Type::DIV, lexer::Token::Type::MOD}, local);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
-#ifdef DEBUG
-        std::cout << "MulAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-        lexer::Token op   = tokens[split];
-        sptr<AST>    left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
-                          String("Expected espression of type \e[1m") + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
-                          String("Expected espression of type \e[1m") + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        if (op.type == lexer::Token::Type::MUL)
-            return share<AST>(new MulAST(left, right, t));
-        else if (op.type == lexer::Token::Type::DIV)
-            return share<AST>(new DivAST(left, right, t));
-        else if (op.type == lexer::Token::Type::MOD)
-            return share<AST>(new ModAST(left, right, t));
-    }
-*/
     return nullptr;
 }
 
@@ -504,30 +424,6 @@ String PowAST::emitLL(int*, String) const { return ""; }
 sptr<AST> PowAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "PowAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::POW, PowAST);
-    /*if (tokens.size() < 1)
-        return nullptr;
-    auto   t     = tokens;
-    size_t split = parser::splitStack(tokens, {lexer::Token::Type::POW}, local);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
-#ifdef DEBUG
-        std::cout << "PowAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-        lexer::Token op   = tokens[split];
-        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
-                          String("Expected espression of type \e[1m") + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
-                          String("Expected espression of type \e[1m") + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        return share<AST>(new PowAST(left, right, t));
-    }*/
-
     return nullptr;
 }
 
@@ -559,31 +455,6 @@ String LorAST::emitLL(int* locc, String inp) const {
 sptr<AST> LorAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "LorAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::LOR, LorAST);
-    /*if (tokens.size() < 1)
-        return nullptr;
-    auto   t     = tokens;
-    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LOR}, local);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
-#ifdef DEBUG
-        std::cout << "LorAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-        lexer::Token op   = tokens[split];
-        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        if (op.type == lexer::Token::Type::LOR)
-            return share<AST>(new LorAST(left, right, t));
-    }
-    */
     return nullptr;
 }
 
@@ -615,31 +486,6 @@ String LandAST::emitLL(int* locc, String inp) const {
 sptr<AST> LandAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "LandAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::LAND, LandAST);
-    /*if (tokens.size() < 1)
-        return nullptr;
-    auto   t     = tokens;
-    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LAND}, local);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
-#ifdef DEBUG
-        std::cout << "LandAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-        lexer::Token op   = tokens[split];
-        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        if (op.type == lexer::Token::Type::LAND)
-            return share<AST>(new LandAST(left, right, t));
-    }
-*/
     return nullptr;
 }
 
@@ -676,31 +522,6 @@ String OrAST::emitLL(int* locc, String inp) const {
 sptr<AST> OrAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "OrAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::OR, OrAST);
-    /*if (tokens.size() < 1)
-        return nullptr;
-    auto   t     = tokens;
-    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LOR}, local);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
-#ifdef DEBUG
-        std::cout << "OrAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-        lexer::Token op   = tokens[split];
-        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        if (op.type == lexer::Token::Type::OR)
-            return share<AST>(new OrAST(left, right, t));
-    }
-*/
     return nullptr;
 }
 
@@ -738,31 +559,6 @@ String AndAST::emitLL(int* locc, String inp) const {
 sptr<AST> AndAST::parse(lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type) {
     DEBUG(2, "AndAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::AND, AddAST);
-    /*if (tokens.size() < 1)
-        return nullptr;
-    auto   t     = tokens;
-    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LAND}, local);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
-#ifdef DEBUG
-        std::cout << "AndAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-        lexer::Token op   = tokens[split];
-        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        if (op.type == lexer::Token::Type::AND)
-            return share<AST>(new AndAST(left, right, t));
-    }
-*/
     return nullptr;
 }
 
@@ -800,31 +596,6 @@ String XorAST::emitLL(int* locc, String inp) const {
 sptr<AST> XorAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mXorAST::parse\e[0m");
     STANDARD_MATH_PARSE(lexer::Token::XOR, XorAST);
-    /*if (tokens.size() < 1)
-        return nullptr;
-    auto   t     = tokens;
-    size_t split = parser::splitStack(tokens, {lexer::Token::Type::LAND}, local);
-    if (tokens.size() > 2 && split != 0 && split < tokens.size()) {
-#ifdef DEBUG
-        std::cout << "AndAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-        lexer::Token op   = tokens[split];
-        sptr<AST>         left = math::parse(parser::subvector(tokens, 0, 1, split), local, sr, expected_type);
-        if (left == nullptr) {
-            parser::error("Expression expected", {tokens[0], tokens[split - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        sptr<AST> right = math::parse(parser::subvector(tokens, split + 1, 1, tokens.size()), local, sr, expected_type);
-        if (right == nullptr) {
-            parser::error("Expression expected", {tokens[split], tokens[tokens.size() - 1]},
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
-            return share<AST>(new AST());
-        }
-        if (op.type == lexer::Token::Type::XOR)
-            return share<AST>(new XorAST(left, right, t));
-    }
-*/
     return nullptr;
 }
 
@@ -917,7 +688,7 @@ CastAST::CastAST(sptr<AST> from, sptr<AST> type, lexer::TokenStream tokens) {
 }
 
 sptr<AST> CastAST::parse(PARSER_FN_PARAM) {
-    DEBUGT(4, "Trying \e[1mCastAST::parse\e[0m", &tokens);
+    DEBUG(4, "Trying \e[1mCastAST::parse\e[0m");
     if (tokens.size() < 3)
         return nullptr;
     lexer::TokenStream::Match m = tokens.splitStack({lexer::Token::AS});
@@ -943,39 +714,6 @@ sptr<AST> CastAST::parse(PARSER_FN_PARAM) {
         }
         return share<AST>(new CastAST(expr, type, tokens));
     }
-
-    /*if (tokens.size() < 3)
-        return nullptr;
-    int split = parser::rsplitStack(tokens, {lexer::Token::Type::AS}, local);
-#ifdef DEBUG
-    std::cout << "CastAST::parse:\tsplit:\t" << split << std::endl;
-#endif
-    if (split == (int)tokens.size() - 1) {
-        parser::error("Expected type", {tokens[tokens.size() - 1]}, "Expected a type after 'as'", 25);
-        return share<AST>(new AST);
-    }
-    if (split == (int)tokens.size())
-        return nullptr;
-    if (split == 0) {
-        parser::error("Expression expected", {tokens[0]}, "Expected a valid expression", 31);
-        return share<AST>(new AST());
-    }
-    auto buf  = parser::subvector(tokens, split + 1, 1, tokens.size());
-    sptr<AST> type = Type::parse(buf, local, sr);
-    if (type == nullptr) {
-        parser::error("Expected type", buf, "Expected a type after 'as'", 25);
-        return share<AST>(new AST);
-    }
-
-    buf       = parser::subvector(tokens, 0, 1, split);
-    sptr<AST> expr = math::parse(buf, local, sr);
-    if (expr == nullptr) {
-        parser::error("Expression expected", {tokens[0]}, "Expected a valid expression", 31);
-        return share<AST>(new AST());
-    }
-
-    return share<AST>(new CastAST(expr, type, tokens));*/
-
     return nullptr;
 }
 
@@ -1091,23 +829,6 @@ sptr<AST> CheckAST::parse(PARSER_FN_PARAM) {
         }
         return share<AST>(new CheckAST(of, tokens));
     }
-
-    /*if (tokens.size() == 0)
-        return nullptr;
-    if (tokens.at(tokens.size() - 1).type == lexer::Token::Type::QM) {
-        sptr<AST> of = math::parse(parser::subvector(tokens, 0, 1, tokens.size() - 1), local, sr, expected_type);
-        if (of == nullptr) {
-            if (tokens.size() == 1) {
-                parser::error("Expected expression", tokens, "expected an expression before '?'", 31);
-            } else {
-                parser::error("Expected expression", parser::subvector(tokens, 0, 1, tokens.size() - 1),
-                              "expected a valid expression before '?'", 31);
-            }
-            return nullptr;
-        }
-        return share<AST>(new CheckAST(of, tokens));
-    }*/
-
     return nullptr;
 }
 
@@ -1131,17 +852,18 @@ String CheckAST::emitLL(int* locc, String inp) const {
     return s + insert("%" + std::to_string(((*locc)++)), inp);
 }
 
-sptr<AST> NoWrapAST::parse(PARSER_FN_PARAM){
+sptr<AST> NoWrapAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mNoWrapAST::parse\e[0m");
     if (tokens.size() < 3)
         return nullptr;
     if (tokens[0].type == lexer::Token::NOWRAP) {
-        DEBUG(2, "NoWrapAST::parse");
-        if (tokens[1].type != lexer::Token::BLOCK_OPEN) {
-            parser::error("Expected Block open", {tokens[0]}, "Expected a '{' token after 'nowrap'", 0);
+        DEBUGT(2, "NoWrapAST::parse", &tokens);
+        if (tokens[1].type != lexer::Token::OPEN) {
+            parser::error("Expected Block open", {tokens[0]}, "Expected a '(' token after 'nowrap'", 0);
             return share<AST>(new AST);
         }
-        if (tokens[-1].type != lexer::Token::BLOCK_CLOSE) {
-            parser::error("Expected Block close", {tokens[-1]}, "Expected a '}' token after '"s + tokens[-1].value + "'", 0);
+        if (tokens[-1].type != lexer::Token::CLOSE) {
+            parser::error("Expected Block close", {tokens[-1]}, "Expected a ')' token after '"s + tokens[-1].value + "'", 0);
             return share<AST>(new AST);
         }
         sptr<AST> a = math::parse(tokens.slice(2, 1, -1), local + 1, sr);
@@ -1172,6 +894,6 @@ sptr<AST> math::parse(lexer::TokenStream tokens, int local, symbol::Namespace* s
 
                                AddAST::parse, MulAST::parse, PowAST::parse, LandAST::parse, LorAST::parse, NotAST::parse, NegAST::parse,
 
-                               CastAST::parse, CheckAST::parse, FuncCallAST::parse, NoWrapAST::parse, parse_pt},
+                               NoWrapAST::parse, CastAST::parse, CheckAST::parse, FuncCallAST::parse, parse_pt},
                               local, sr, expected_type);
 }

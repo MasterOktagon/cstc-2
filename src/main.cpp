@@ -58,6 +58,10 @@ int32 main(int32 argc, const char** argv){
         .help("target for cross-compiler")
         .default_value<String>("linux:x86:64:llvm")
     ;
+    argparser.add_argument("--entrypoint")
+        .help("entrypoint funtcion")
+        .default_value<String>("main")
+    ;
     argparser.add_argument("--no-std-lang")
         .help("disable autoloading std::lang module")
         .flag()
@@ -87,6 +91,13 @@ int32 main(int32 argc, const char** argv){
         std::cerr << err.what() << std::endl;
         std::cerr << argparser;
         return EXIT_ARG_FAILURE;
+    }
+
+    if (target::isValid(argparser.get("--target"))) {
+        target::set(argparser.get("--target"));
+    } else {
+        std::cerr << "\e[1;31mERROR:\e[0m target '" << argparser.get("--target") << "' not found. Get a list of available targets with --list-targets. Defaulting to linux:x86:64:llvm" << std::endl;
+        target::set("linux:x86:64:llvm");
     }
 
     // check optimizer features

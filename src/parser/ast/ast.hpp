@@ -13,6 +13,7 @@
 #define PARSER_FN lexer::TokenStream, int local, symbol::Namespace* sr, String expected_type="@unknown" //> used to template all parser functions
 #define PARSER_FN_PARAM lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type
 #define PARSER_FN_NO_DEFAULT fsignal<sptr<AST>, lexer::TokenStream, int, symbol::Namespace*, String>
+#define ERR share<AST>(new AST)
 
 /**
  * @class represents an AST node

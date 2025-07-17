@@ -118,7 +118,7 @@ class SegFException : public Exception {
 };
 
 #define instanceOf(el, of) ((of*)el.get() == dynamic_cast<of*>(el.get()))
-#define cast2 (a, to) (dynamic_pointer_cast<to>(a))
+#define cast2(a, to) (std::dynamic_pointer_cast<to>(a))
 
 /*template< typename T, typename T2 >
 inline std::pair<T,T2> operator , (T& t, T2& t2){

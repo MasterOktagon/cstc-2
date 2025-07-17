@@ -123,11 +123,11 @@ namespace symbol {
         Namespace(String loc){this->loc = loc;};
         virtual ~Namespace();
 
-        bool ALLOWS_VAR_DECL     = false;
+        bool ALLOWS_VAR_DECL    = false;
         // whether to allow variable declaration
-        bool ALLOWS_VAR_SET      = false;
+        bool ALLOWS_VAR_SET     = false;
         // whether to allow variable setting
-        bool ALLOWS_VISIBILITY   = false;
+        bool ALLOWS_VISIBILITY  = false;
         // whether to allow variable visibility (public, private etc.)
         bool ALLOWS_VIRTUAL     = false;
         // whether to allow virtual variables & functions
@@ -146,7 +146,31 @@ namespace symbol {
         bool ALLOWS_ENUMS       = false;
 
         virtual std::vector<symbol::Reference*> operator [] (String subloc);
-        const String getName() const {return "Namespace";}
+        const String                            getName() const { return "Namespace"; }
+
+        class LinearitySnapshot : public Repr {
+            std::map<symbol::Variable*, Variable::Status> data;
+            friend class Namespace;
+            
+            protected:
+            LinearitySnapshot(std::map<Variable*, Variable::Status> idata) { idata = data; };
+            String _str() const {
+                String s = "[";
+                for (auto d : data) {
+                    s+=d.first->getVarName() + "=" + std::vector<String>({"UNINITIALIZED", "PROVIDED", "CONSUMED"})[d.second] + ", ";
+                }
+                s += "]";
+                return s;
+            }
+            
+            public:
+            bool operator == (LinearitySnapshot ls) const;
+            bool operator!=(LinearitySnapshot ls) const { return !(*this == ls); }
+
+            void traceback(LinearitySnapshot ls) const;
+        };
+
+        LinearitySnapshot snapshot() const;
     };
 
     class Opaque {

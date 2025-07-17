@@ -152,6 +152,7 @@ lexer::Token::Type lexer::matchType(String c) {
     else if (c == "delete"){ type = lexer::Token::Type::DELETE; } // Not sure about this
     else if (c == "operator"){ type = lexer::Token::Type::OPERATOR; }
     else if (c == "finally"){ type = lexer::Token::Type::FINALLY; }
+    else if (c == "nowrap"){ type = lexer::Token::Type::NOWRAP; }
     
     return type;
 }

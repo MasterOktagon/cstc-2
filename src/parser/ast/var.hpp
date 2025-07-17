@@ -22,7 +22,7 @@ class VarDeclAST : public AST {
     virtual ~VarDeclAST(){};
     virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
     virtual String emitLL(int*, String) const;
-    virtual String emitCST() const {return type->getCstType() + " " + name + ";";}
+    virtual String emitCST() const {return (v->isMutable ? "mut "s : ""s ) + type->getCstType() + " " + name + ";";}
     virtual String getCstType() const {return name;}
     virtual String getLLType() const {return "";}
     virtual void forceType(String){}
@@ -48,7 +48,7 @@ class VarInitlAST : public AST {
     virtual uint64 nodeSize() const {return expression->nodeSize() + 1;} // how many nodes to to do
     virtual String emitLL(int*, String) const;
 
-    virtual String emitCST() const {return type->getCstType() + " " + name + " = " + expression->emitCST() + ";";}
+    virtual String emitCST() const {return (v->isMutable ? "mut "s : ""s ) + (v->isConst ? "const "s : ""s ) + type->getCstType() + " " + name + " = " + expression->emitCST() + ";";}
     
     virtual String getCstType() const {return name;}
     virtual String getLLType() const {return "";}

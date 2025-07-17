@@ -1,10 +1,12 @@
 
 #include "symboltable.hpp"
 #include <map>
+#include <string>
 #include <vector>
-//#include "../debug.hpp"
+#include "../debug/debug.hpp"
 #include "../snippets.h"
-#include <iostream>
+#include "errors.hpp"
+
 
 void symbol::Namespace::add(String loc, symbol::Reference* sr){
     size pos = loc.find("::");
@@ -71,5 +73,48 @@ std::vector<symbol::Reference*> symbol::Namespace::operator[] (String subloc){
         result = (*include.at(i))[subloc];
     }
     return result;
+}
+
+symbol::Namespace::LinearitySnapshot symbol::Namespace::snapshot() const {
+    LinearitySnapshot l({});
+    for (auto s : contents) {
+        auto a = dynamic_cast<symbol::Variable*>(s.second[0]);
+        auto var = (symbol::Variable*)(s.second[0]);
+        DEBUG(7, "snapshot: var? "s + std::to_string(a == var));
+        if (a == var && !var->isFree) {
+            DEBUG(7, "snapshot: ["s + var->getVarName() + "] used: "s + std::to_string(var->used));
+            l.data[var] = var->used;
+        }
+    }
+    
+    return l;
+}
+
+bool symbol::Namespace::LinearitySnapshot::operator==(LinearitySnapshot ls) const {
+    for (auto s : data) {
+        if(ls.data[s.first] != s.second) return false;
+    }
+    return true;
+}
+
+String getStatusName(symbol::Variable::Status s) {
+    switch (s) {
+    default:
+        return "UNKNOWN";
+    case symbol::Variable::Status::CONSUMED:
+        return "CONSUMED";
+    case symbol::Variable::Status::PROVIDED:
+        return "PROVIDED";
+    case symbol::Variable::Status::UNINITIALIZED:
+        return "UNINITIALIZED";
+    }
+}
+
+void symbol::Namespace::LinearitySnapshot::traceback(LinearitySnapshot ls) const {
+    for (auto s : data) {
+        if (ls.data[s.first] != s.second) {
+            parser::note(s.first->last, "Variable \e[1m" + s.first->getVarName() + "\e[0m was " + getStatusName(s.second) + " but is " + getStatusName(ls.data[s.first]) + " now.", 0);
+        }
+    }
 }
 

@@ -387,8 +387,8 @@ void Module::parse(){
     if (root != nullptr){
         int* i = new int;
         *i     = 0;
-        std::cout << str(root.get()) << std::endl;
-        // std::cout << root->emitLL(i,"") << std::endl;
+        //std::cout << str(root.get()) << std::endl;
+        std::cout << root->emitCST() << std::endl;
 
         delete i;
 
