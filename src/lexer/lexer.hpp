@@ -1,6 +1,6 @@
 #pragma once
 
-// 
+//
 // LEXER.hpp
 //
 // layouts the lexer functionality
@@ -8,6 +8,7 @@
 
 #include "../snippets.h"
 #include "token.hpp"
+
 #include <vector>
 
 namespace lexer {
@@ -45,6 +46,8 @@ namespace lexer {
      * @return token type found or Token::Type::NONE. @see @enum lexer::Token::Type
      */
     extern Token::Type matchType(String s);
-}
+} // namespace lexer
+
+
 
 
