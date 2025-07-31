@@ -6,38 +6,41 @@
 // layouts the AST Node class
 //
 
-#include "../../snippets.h"
 #include "../../lexer/token.hpp"
+#include "../../snippets.h"
+
 #include <vector>
 
-#define PARSER_FN lexer::TokenStream, int local, symbol::Namespace* sr, String expected_type="@unknown" //> used to template all parser functions
-#define PARSER_FN_PARAM lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type
+#define PARSER_FN                                                                   \
+    lexer::TokenStream, int local, symbol::Namespace *sr,                           \
+        String expected_type = "@unknown" //> used to template all parser functions
+#define PARSER_FN_PARAM      lexer::TokenStream tokens, int local, symbol::Namespace *sr, String expected_type
 #define PARSER_FN_NO_DEFAULT fsignal<sptr<AST>, lexer::TokenStream, int, symbol::Namespace*, String>
-#define ERR share<AST>(new AST)
+#define ERR                  share<AST>(new AST)
 
 /**
  * @class represents an AST node
  */
 class AST : public Repr {
-
     protected:
         /**
          * @brief debug represenstation
          */
-        virtual String _str() const;
-        lexer::TokenStream tokens = lexer::TokenStream({}); //> Tokens of this AST Node. these are mostly used for error messages
+        virtual String     _str() const;
+        lexer::TokenStream tokens =
+            lexer::TokenStream({}); //> Tokens of this AST Node. these are mostly used for error messages
 
     public:
         /**
          * @note since this class is thought as a replacement for errorneous ASTs, there is only a default constructor
          */
         AST() = default;
-        String value;          //> value, used for several purposes
-        bool is_const = false; //> whether this is const and should be tried to be substituted in.
+        String value;            //> value, used for several purposes
+        bool   is_const = false; //> whether this is const and should be tried to be substituted in.
 
         virtual ~AST() = default;
 
-        lexer::TokenStream getTokens() const {return tokens;}
+        lexer::TokenStream getTokens() const { return tokens; }
 
         /**
          * @brief get the LLVM IR type representation of this Nodes return type
@@ -72,9 +75,8 @@ class AST : public Repr {
         /**
          * @brief get this Nodes work size (in Nodes) for progress reports
          */
-        virtual uint64 nodeSize() const {return 0;}
+        virtual uint64 nodeSize() const { return 0; }
 };
-
 
 ///////// Various Helper Functions //////////
 
@@ -98,5 +100,4 @@ extern String insert(String val, String target);
  * @param target target String to insert into (last "{}")
  */
 extern String rinsert(String val, String target);
-
 
