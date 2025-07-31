@@ -74,13 +74,13 @@ sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
                     parser::error("Variable already defined", {tokens[tokens.size() - 2]},
                                   "A variable of this name is already defined in this scope", 25);
                     parser::note((*sr)[name][0]->tokens, "defined here:", 0);
-                    return sptr<AST>(new AST);
+                    return ERR;
                 }
                 if (parser::isAtomic(name)) {
                     parser::error(
                         "Unsupported name", {tokens[tokens.size() - 2]},
                         "The name "s + name + " refers to a scope or type and cannot be used as a variable name", 25);
-                    return sptr<AST>(new AST);
+                    return ERR;
                 }
                 if (!parser::is_snake_case(name)) {
                     parser::warn("Wrong casing", {tokens[tokens.size() - 2]}, "Variable name should be snake_case", 16);
@@ -89,18 +89,24 @@ sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
                     parser::error("const declaration without initialization", tokens2,
                                   "A variable can only be const if an initialization is given", 25);
                     parser::note(tokens2, "remove the 'const' keyword to resolve this easily", 0);
-                    return sptr<AST>(new AST);
+                    return ERR;
                 }
                 else if (!(m & parser::Modifier::MUTABLE)) {
                     parser::error("immutable declaration without initialization", tokens2,
                                   "A variable can only be immutable if an initialization is given", 25);
                     parser::noteInsert("Make this variable mutable if required", tokens2[0], "mut ", 0, true);
-                    return sptr<AST>(new AST);
+                    return ERR;
+                }
+                if (!sr->ALLOWS_NON_STATIC && !(parser::Modifier::STATIC | parser::Modifier::CONST)) {
+                    parser::error("only static variables allowed", tokens2,
+                                  "only static variables are allowed in a Block of type "s + sr->getName(), 25);
+                                  
                 }
 
                 symbol::Variable* v     = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);
                 v->isConst              = m & parser::Modifier::CONST;
                 v->isMutable            = m & parser::Modifier::MUTABLE;
+                v->isStatic             = m & parser::Modifier::STATIC;
                 sr->add(name, v);
                 if (parser::isAtomic(type->getCstType())){
                     v->isFree = true;
@@ -123,7 +129,7 @@ VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Va
     this->tokens     = tokens;
 }
 String VarInitlAST::_str() const {
-    return "<DECLARE "s + name + " : " + type->getCstType() + " = " + str(expression.get()) + (v->isConst? " CONST"s : ""s) + (v->isMutable? " MUT"s : ""s) +  ">";
+    return "<DECLARE "s + name + " : " + type->getCstType() + " = " + str(expression.get()) + (v->isConst? " CONST"s : ""s) + (v->isMutable? " MUT"s : ""s) + (v->isStatic? " STATIC"s : ""s) +  ">";
 }
 
 sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
@@ -171,7 +177,7 @@ sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
                 parser::warn("Wrong casing", {tokens[split - 1]}, "Variable name should be snake_case", 16);
             }
             if (!parser::IS_UPPER_CASE(name) && m & parser::Modifier::CONST) {
-                parser::warn("Wrong casing", {tokens[split - 1]}, "Variable name should be UPPER_CASE", 16);
+                parser::warn("Wrong casing", {tokens[split - 1]}, "Constant name should be UPPER_CASE", 16);
             }
             if (m & parser::Modifier::CONST) {
                 if (m & parser::Modifier::MUTABLE) {
@@ -180,6 +186,12 @@ sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
                         "This variable was declared as 'const' (unchangeable) and 'mut' (changeable) at the same time.",
                         0);
                     return share<AST>(new AST);
+                }
+                if (m & parser::Modifier::STATIC) {
+                    parser::warn(
+                        "Variable declared as constant and static", {tokens[split - 1]},
+                        "declaring a constant static is ambigous",
+                        0);
                 }
             }
             expr->forceType(type->getCstType());
@@ -198,6 +210,11 @@ sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
                 }
                 v->const_value = expr->value;
             }
+            if (!sr->ALLOWS_NON_STATIC && !(m & (parser::Modifier::STATIC | parser::Modifier::CONST))) {
+                parser::error("only static variables allowed", {tokens[split - 1]},
+                                "only static variables are allowed in a Block of type "s + sr->getName(), 25);
+            }
+
             v->isConst = m & parser::Modifier::CONST;
             v->isMutable = m & parser::Modifier::MUTABLE;
             sr->add(name, v);
