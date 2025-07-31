@@ -16,7 +16,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Enable Debug mode if required
 
 add_compile_options(-W -Wall -Wextra -Wno-literal-suffix -Wno-unused-parameter)
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if ( NOT "${CMAKE_BUILD_TYPE}" )
+    message(STATUS "Build Type not set, defaulting to Debug..." )
+    set( CMAKE_BUILD_TYPE Debug )
+endif()
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Building in Debug mode...")
     add_compile_options(-DDEBUG_ON -g)
 else()
