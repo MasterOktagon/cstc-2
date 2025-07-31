@@ -892,7 +892,7 @@ sptr<AST> math::parse(lexer::TokenStream tokens, int local, symbol::Namespace* s
                               {IntLiteralAST::parse, FloatLiteralAST::parse, BoolLiteralAST::parse,
                                CharLiteralAST::parse, StringLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
 
-                               AddAST::parse, MulAST::parse, PowAST::parse, LandAST::parse, LorAST::parse, NotAST::parse, NegAST::parse,
+                               AddAST::parse, MulAST::parse, PowAST::parse, LorAST::parse, LandAST::parse, NotAST::parse, NegAST::parse,
 
                                NoWrapAST::parse, CastAST::parse, CheckAST::parse, FuncCallAST::parse, parse_pt},
                               local, sr, expected_type);
