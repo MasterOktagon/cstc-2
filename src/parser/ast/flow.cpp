@@ -52,6 +52,7 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
     while (tokens.size() > 0) {
         lexer::TokenStream::Match split =
             tokens.rsplitStack({lexer::Token::Type::END_CMD, lexer::Token::Type::BLOCK_CLOSE});
+        //bool next_is_id = tokens[(uint64)split+1].type == lexer::Token::ID;
         lexer::TokenStream buffer = tokens.slice(0, 1, (int64)split + 1);
         DEBUGT(2, "SubBlockAST::parse", &buffer);
         if (!(buffer.size() == 1 && buffer[0].type == lexer::Token::END_CMD)) {
