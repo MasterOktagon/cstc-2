@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Enable Debug mode if required
 
-add_compile_options(-W -Wall -Wextra -Wno-literal-suffix)
+add_compile_options(-W -Wall -Wextra -Wno-literal-suffix -Wno-unused-parameter)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Building in Debug mode...")
     add_compile_options(-DDEBUG_ENABLED -g)
@@ -27,19 +27,19 @@ endif()
 
 file(GLOB_RECURSE SRC "src/*")
 
+# Main exectuable
+
+add_executable ( ${ExecutableName} ${SRC})
+
 # check for segvcatch lib
 if (IS_DIRECTORY "lib/segvcatch/lib/")
     message(STATUS "optional dependency segvcatch found")
     include_directories("lib/segvcatch/lib/")
-    target_link_libraries(cstc PRIVATE segvcatch)
-    target_include_directories(cstc PRIVATE ${SEGVCATCH_INCLUDE_DIRS})
+    target_link_libraries(${ExecutableName} PRIVATE segvcatch)
+    target_include_directories(${ExecutableName} PRIVATE ${SEGVCATCH_INCLUDE_DIRS})
 else()
     message(STATUS "optional dependency segvcatch wasn't found")
 endif()
-
-# Main exectuable
-
-add_executable ( ${ExecutableName} ${SRC})
 
 # Tests
 
