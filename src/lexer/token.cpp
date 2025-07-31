@@ -1,24 +1,26 @@
 
-
-// 
+//
 // TOKEN.cpp
 //
 // implements the Token class
 //
 
-#include "../snippets.h"
-#include <algorithm>
-#include <initializer_list>
-#include <string>
-#include <vector>
-#include <stack>
 #include "token.hpp"
+
+#include "../snippets.h"
 #include "errors.hpp"
 
-#define tokenToSTR(tok) case lexer::Token::Type::tok: return #tok;
-String lexer::getTokenName(lexer::Token::Type type){
-    switch(type){
-        tokenToSTR(NONE)
+#include <algorithm>
+#include <initializer_list>
+#include <stack>
+#include <string>
+#include <vector>
+
+#define tokenToSTR(tok)                         \
+    case lexer::Token::Type::tok : return #tok;
+String lexer::getTokenName(lexer::Token::Type type) {
+    switch (type) {
+    tokenToSTR(NONE)
         tokenToSTR(ID)
         tokenToSTR(EF)
         tokenToSTR(END_CMD)
@@ -243,4 +245,3 @@ lexer::TokenStream::Match lexer::TokenStream::rsplitStack(std::initializer_list<
     }
     return TokenStream::Match(0, false, this);
 }
-
