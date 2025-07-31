@@ -1,32 +1,46 @@
 #include "base_math.hpp"
+
+#include "../../build/optimizer_flags.hpp"
+#include "../../debug/debug.hpp"
 #include "../../lexer/lexer.hpp"
 #include "../errors.hpp"
 #include "../parser.hpp"
 #include "../symboltable.hpp"
-#include "../../build/optimizer_flags.hpp"
 #include "ast.hpp"
 #include "func.hpp"
 #include "literal.hpp"
 #include "type.hpp"
 #include "var.hpp"
+
+//#include <catch2/catch.hpp>
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <regex>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <cmath>
-#include "../../debug/debug.hpp"
 
-CstType DoubleOperandAST::getCstType() const { return parser::hasOp(left->getCstType(), right->getCstType(), op); }
-LLType  DoubleOperandAST::getLLType() const { return parser::LLType(getCstType()); }
-uint64  DoubleOperandAST::nodeSize() const { return left->nodeSize() + right->nodeSize() + 1; }
-String  DoubleOperandAST::_str() const {
-    return "<"s + str(left.get()) + op_view + str(right.get()) + (is_const ? " [="s + value + "]>" : ">"s );
+CstType DoubleOperandAST::getCstType() const {
+    return parser::hasOp(left->getCstType(), right->getCstType(), op);
 }
+
+LLType DoubleOperandAST::getLLType() const {
+    return parser::LLType(getCstType());
+}
+
+uint64 DoubleOperandAST::nodeSize() const {
+    return left->nodeSize() + right->nodeSize() + 1;
+}
+
+String DoubleOperandAST::_str() const {
+    return "<"s + str(left.get()) + op_view + str(right.get()) + (is_const ? " [="s + value + "]>" : ">"s);
+}
+
 String DoubleOperandAST::emitCST() const {
     return "("s + left->emitCST() + " " + op_view + " " + right->emitCST() + ")";
 }
+
 void DoubleOperandAST::forceType(CstType type) {
     std::regex i("u?int(8|16|32|64|128)");
     std::regex f("float(16|32|64|128)");
@@ -46,66 +60,95 @@ void DoubleOperandAST::forceType(CstType type) {
     // check for operator overloading [WIP/TODO]
     CstType ret = parser::hasOp(left->getCstType(), right->getCstType(), op);
     if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
+        if (ret != type) {
+            parser::error("Mismatiching types",
+                          tokens,
                           left->getCstType() + "::operator " + op_view + " (" + right->getCstType() + ") yields " +
                               ret + " (expected \e[1m" + type + "\e[0m)",
                           18);
+        }
 
         else if (optimizer::do_constant_folding && right->is_const && left->is_const) {
-            //std::cout << op_view << "constant_folding" << std::endl;
-            if (const_folding_fn.count(std::make_tuple(left->getCstType(),right->getCstType()))) {
-                value = const_folding_fn[std::make_tuple(left->getCstType(),right->getCstType())](left->value,right->value);
+            // std::cout << op_view << "constant_folding" << std::endl;
+            if (const_folding_fn.count(std::make_tuple(left->getCstType(), right->getCstType()))) {
+                value    = const_folding_fn[std::make_tuple(left->getCstType(), right->getCstType())](left->value,
+                                                                                                   right->value);
                 is_const = true;
             }
         }
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator " + op_view + " (" + right->getCstType() + ") is not implemented.", 18);
+    } else {
+        parser::error("Unknown operator",
+                      tokens,
+                      left->getCstType() + "::operator " + op_view + " (" + right->getCstType() +
+                          ") is not implemented.",
+                      18);
+    }
 }
 
-CstType UnaryOperandAST::getCstType() const { return parser::hasOp(left->getCstType(), left->getCstType(), op); }
-LLType  UnaryOperandAST::getLLType() const { return parser::LLType(getCstType()); }
-uint64  UnaryOperandAST::nodeSize() const { return left->nodeSize() + 1; }
-void    UnaryOperandAST::forceType(CstType type) {
+CstType UnaryOperandAST::getCstType() const {
+    return parser::hasOp(left->getCstType(), left->getCstType(), op);
+}
 
+LLType UnaryOperandAST::getLLType() const {
+    return parser::LLType(getCstType());
+}
+
+uint64 UnaryOperandAST::nodeSize() const {
+    return left->nodeSize() + 1;
+}
+
+void UnaryOperandAST::forceType(CstType type) {
     String ret = parser::hasOp(left->getCstType(), left->getCstType(), op);
     if (ret != "") {
-        if (ret != type)
-            parser::error("Mismatiching types", tokens,
+        if (ret != type) {
+            parser::error("Mismatiching types",
+                          tokens,
                           left->getCstType() + "::operator " + op_view + " () yields " + ret + " (expected \e[1m" +
                               type + "\e[0m)",
                           18);
+        }
 
         else if (optimizer::do_constant_folding && left->is_const) {
             if (const_folding_fn.count(left->getCstType())) {
-                value = const_folding_fn[left->getCstType()](left->value);
+                value    = const_folding_fn[left->getCstType()](left->value);
                 is_const = true;
             }
         }
-    } else
-        parser::error("Unknown operator", tokens,
-                      left->getCstType() + "::operator " + op_view + " () is not implemented.", 18);
+    } else {
+        parser::error("Unknown operator",
+                      tokens,
+                      left->getCstType() + "::operator " + op_view + " () is not implemented.",
+                      18);
+    }
 }
 
-String UnaryOperandAST::emitCST() const { return op_view + left->emitCST(); }
+String UnaryOperandAST::emitCST() const {
+    return op_view + left->emitCST();
+}
 
 String UnaryOperandAST::_str() const {
-    return "<"s + op_view + str(left.get()) + (is_const ? " [="s + value + "]>" : ">"s );
+    return "<"s + op_view + str(left.get()) + (is_const ? " [="s + value + "]>" : ">"s);
 }
 
 //  AddAST
 
-#define CF_FUN_INT(type1, type2, type, op) {std::make_tuple(type1, type2), nlambda (String v1, String v2) {return std::to_string(type(std::stoll(v1) op std::stoll(v2)));} }
-#define CF_FUN_FLT(type1, type2, type, op) {std::make_tuple(type1, type2), nlambda (String v1, String v2) {return std::to_string(type(std::stold(v1) op std::stold(v2)));} }
-
+#define CF_FUN_INT(type1, type2, type, op)                                                         \
+    {std::make_tuple(type1, type2),                                                                \
+     nlambda(String v1, String v2) {return std::to_string(type(std::stoll(v1) op std::stoll(v2))); \
+    }                                                                                              \
+    }
+#define CF_FUN_FLT(type1, type2, type, op)                                                         \
+    {std::make_tuple(type1, type2),                                                                \
+     nlambda(String v1, String v2) {return std::to_string(type(std::stold(v1) op std::stold(v2))); \
+    }                                                                                              \
+    }
 
 AddAST::AddAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left    = left;
-    this->right   = right;
-    this->tokens  = tokens;
-    this->op      = lexer::Token::ADD;
-    this->op_view = "+";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::ADD;
+    this->op_view          = "+";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, +),
         CF_FUN_INT("uint16", "uint16", uint16, +),
@@ -124,10 +167,9 @@ AddAST::AddAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
     };
 }
 
-AddAST::~AddAST(){};
+AddAST::~AddAST() {};
 
 String AddAST::emitLL(int* locc, String inp) const {
-
     String op  = left->getLLType()[0] == 'i' ? "add" : "fadd contract nsz";
     String inc = String("{} = ") + op + " " + getLLType() + " {}, {}\n";
     String l   = right->emitLL(locc, inc);
@@ -140,35 +182,38 @@ String AddAST::emitLL(int* locc, String inp) const {
 
 sptr<AST> AddAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mAddAST::parse\e[0m");
-    if (tokens.size() < 1)
-        return nullptr;
+    if (tokens.size() < 1) { return nullptr; }
     lexer::TokenStream::Match m =
         tokens.splitStack({lexer::Token::Type::ADD, lexer::Token::Type::SUB}, tokens[0].type == lexer::Token::SUB);
     if (m.found()) {
         DEBUGT(2, "AddAST::parse", &tokens)
 
-        sptr<AST> left   = math::parse(m.before(), local, sr, expected_type);
+        sptr<AST> left = math::parse(m.before(), local, sr, expected_type);
         if (left == nullptr) {
-            parser::error("Expression expected", m.before(),
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            parser::error("Expression expected",
+                          m.before(),
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m",
+                          111);
             return share<AST>(new AST());
         }
 
         sptr<AST> right = math::parse(m.after(), local, sr, expected_type);
         if (right == nullptr) {
-            parser::error("Expression expected", m.after(),
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            parser::error("Expression expected",
+                          m.after(),
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m",
+                          111);
             return share<AST>(new AST());
         }
         lexer::Token op = tokens[m];
         DEBUG(3, "\top.type: "s + lexer::getTokenName(op.type))
-        if (op.type == lexer::Token::Type::ADD)
+        if (op.type == lexer::Token::Type::ADD) {
             return share<AST>(new AddAST(left, right, tokens));
+        }
 
-        else if (op.type == lexer::Token::Type::SUB)
+        else if (op.type == lexer::Token::Type::SUB) {
             return share<AST>(new SubAST(left, right, tokens));
-
-        
+        }
     }
     return nullptr;
 }
@@ -176,11 +221,11 @@ sptr<AST> AddAST::parse(PARSER_FN_PARAM) {
 // SubAST
 
 SubAST::SubAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::SUB;
-    this->op_view = "-";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::SUB;
+    this->op_view          = "-";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, -),
         CF_FUN_INT("uint16", "uint16", uint16, -),
@@ -199,10 +244,9 @@ SubAST::SubAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
     };
 }
 
-SubAST::~SubAST(){};
+SubAST::~SubAST() {};
 
 String SubAST::emitLL(int* locc, String inp) const {
-
     String op  = left->getLLType()[0] == 'i' ? "sub" : "fsub contract nsz";
     String inc = "{} = "s + op + " " + getLLType() + " {}, {}\n";
     String l   = right->emitLL(locc, inc);
@@ -216,11 +260,11 @@ String SubAST::emitLL(int* locc, String inp) const {
 // MulAST
 
 MulAST::MulAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::MUL;
-    this->op_view = "*";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::MUL;
+    this->op_view          = "*";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, *),
         CF_FUN_INT("uint16", "uint16", uint16, *),
@@ -239,10 +283,9 @@ MulAST::MulAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
     };
 }
 
-MulAST::~MulAST(){};
+MulAST::~MulAST() {};
 
 String MulAST::emitLL(int* locc, String inp) const {
-
     String op  = left->getLLType()[0] == 'i' ? "mul" : "fmul contract arcp nsz";
     String inc = "{} = "s + op + " " + getLLType() + " {}, {}\n";
     String l   = right->emitLL(locc, inc);
@@ -255,35 +298,41 @@ String MulAST::emitLL(int* locc, String inp) const {
 
 sptr<AST> MulAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mMulAST::parse\e[0m");
-    if (tokens.size() < 1)
-        return nullptr;
+    if (tokens.size() < 1) { return nullptr; }
     lexer::TokenStream::Match m = tokens.splitStack({lexer::Token::MUL, lexer::Token::DIV, lexer::Token::MOD});
     if (m.found()) {
         DEBUGT(2, "MulAST::parse", &tokens)
 
-        sptr<AST> left   = math::parse(m.before(), local, sr, expected_type);
+        sptr<AST> left = math::parse(m.before(), local, sr, expected_type);
         if (left == nullptr) {
-            parser::error("Expression expected", m.before(),
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            parser::error("Expression expected",
+                          m.before(),
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m",
+                          111);
             return share<AST>(new AST());
         }
 
         sptr<AST> right = math::parse(m.after(), local, sr, expected_type);
         if (right == nullptr) {
-            parser::error("Expression expected", m.after(),
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);
+            parser::error("Expression expected",
+                          m.after(),
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m",
+                          111);
             return share<AST>(new AST());
         }
         lexer::Token op = tokens[m];
         DEBUG(3, "\top.type: "s + lexer::getTokenName(op.type))
-        if (op.type == lexer::Token::Type::MUL)
+        if (op.type == lexer::Token::Type::MUL) {
             return share<AST>(new MulAST(left, right, tokens));
+        }
 
-        else if (op.type == lexer::Token::Type::DIV)
+        else if (op.type == lexer::Token::Type::DIV) {
             return share<AST>(new DivAST(left, right, tokens));
+        }
 
-        else if (op.type == lexer::Token::Type::MOD)
+        else if (op.type == lexer::Token::Type::MOD) {
             return share<AST>(new DivAST(left, right, tokens));
+        }
     }
     return nullptr;
 }
@@ -291,11 +340,11 @@ sptr<AST> MulAST::parse(PARSER_FN_PARAM) {
 // DivAST
 
 DivAST::DivAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::DIV;
-    this->op_view = "/";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::DIV;
+    this->op_view          = "/";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, /),
         CF_FUN_INT("uint16", "uint16", uint16, /),
@@ -314,10 +363,9 @@ DivAST::DivAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
     };
 }
 
-DivAST::~DivAST(){};
+DivAST::~DivAST() {};
 
 String DivAST::emitLL(int* locc, String inp) const {
-
     String op = left->getLLType()[0] == 'i' ? left->getCstType()[0] == 'u' ? "udiv" : "sdiv" : "fdiv contract arcp nsz";
     String inc = "{} = "s + op + " " + getLLType() + " {}, {}\n";
     String l   = right->emitLL(locc, inc);
@@ -331,11 +379,11 @@ String DivAST::emitLL(int* locc, String inp) const {
 // ModAST
 
 ModAST::ModAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::MOD;
-    this->op_view = "%";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::MOD;
+    this->op_view          = "%";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, %),
         CF_FUN_INT("uint16", "uint16", uint16, %),
@@ -349,7 +397,7 @@ ModAST::ModAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
     };
 }
 
-ModAST::~ModAST(){};
+ModAST::~ModAST() {};
 
 String ModAST::emitLL(int* locc, String inp) const {
     String op = left->getLLType()[0] == 'i' ? left->getCstType()[0] == 'u' ? "urem" : "srem" : "frem contract arcp nsz";
@@ -364,16 +412,25 @@ String ModAST::emitLL(int* locc, String inp) const {
 
 // PowAST
 
-#define CF_FUN_POW(type, type2) {std::make_tuple(type, type), nlambda (String v1, String v2) {return std::to_string(type2(std::pow(float80(std::stoll(v1)),float80(std::stoll(v2)))));} }
-#define CF_FUN_POW_FLT(type, type2) {std::make_tuple(type, type), nlambda (String v1, String v2) {return std::to_string(type2(std::pow(float80(std::stold(v1)),float80(std::stold(v2)))));} }
-
+#define CF_FUN_POW(type, type2)                                                                                    \
+    {std::make_tuple(type, type),                                                                                  \
+     nlambda(String v1,                                                                                            \
+             String v2) {return std::to_string(type2(std::pow(float80(std::stoll(v1)), float80(std::stoll(v2))))); \
+    }                                                                                                              \
+    }
+#define CF_FUN_POW_FLT(type, type2)                                                                                \
+    {std::make_tuple(type, type),                                                                                  \
+     nlambda(String v1,                                                                                            \
+             String v2) {return std::to_string(type2(std::pow(float80(std::stold(v1)), float80(std::stold(v2))))); \
+    }                                                                                                              \
+    }
 
 PowAST::PowAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::POW;
-    this->op_view = "**";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::POW;
+    this->op_view          = "**";
     this->const_folding_fn = {
         CF_FUN_POW("uint8", uint8),
         CF_FUN_POW("uint16", uint16),
@@ -394,32 +451,34 @@ PowAST::PowAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
 
 PowAST::~PowAST() = default;
 
-String PowAST::emitLL(int*, String) const { return ""; }
+String PowAST::emitLL(int*, String) const {
+    return "";
+}
 
-#define STANDARD_MATH_PARSE(tokentype, type1)                                                                          \
-    if (tokens.size() < 1)                                                                                             \
-        return nullptr;                                                                                                \
-    lexer::TokenStream::Match m = tokens.splitStack({tokentype});                                                      \
-    if (m.found()) {                                                                                                   \
-                                                                                                                       \
-        sptr<AST> left = math::parse(m.before(), local, sr, expected_type);                                            \
-        if (left == nullptr) {                                                                                         \
-            parser::error("Expression expected", m.before(),                                                           \
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);                        \
-            return share<AST>(new AST());                                                                              \
-        }                                                                                                              \
-                                                                                                                       \
-        sptr<AST> right = math::parse(m.after(), local, sr, expected_type);                                            \
-        if (right == nullptr) {                                                                                        \
-            parser::error("Expression expected", m.after(),                                                            \
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", 111);                        \
-            return share<AST>(new AST());                                                                              \
-        }                                                                                                              \
-        lexer::Token op = tokens[m];                                                                                   \
-        if (op.type == tokentype)                                                                                      \
-            return share<AST>(new type1(left, right, tokens));                                                         \
+#define STANDARD_MATH_PARSE(tokentype, type1)                                             \
+    if (tokens.size() < 1) return nullptr;                                                \
+    lexer::TokenStream::Match m = tokens.splitStack({tokentype});                         \
+    if (m.found()) {                                                                      \
+        sptr<AST> left = math::parse(m.before(), local, sr, expected_type);               \
+        if (left == nullptr) {                                                            \
+            parser::error("Expression expected",                                          \
+                          m.before(),                                                     \
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", \
+                          111);                                                           \
+            return share<AST>(new AST());                                                 \
+        }                                                                                 \
+                                                                                          \
+        sptr<AST> right = math::parse(m.after(), local, sr, expected_type);               \
+        if (right == nullptr) {                                                           \
+            parser::error("Expression expected",                                          \
+                          m.after(),                                                      \
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m", \
+                          111);                                                           \
+            return share<AST>(new AST());                                                 \
+        }                                                                                 \
+        lexer::Token op = tokens[m];                                                      \
+        if (op.type == tokentype) return share<AST>(new type1(left, right, tokens));      \
     }
-
 
 sptr<AST> PowAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "PowAST::parse");
@@ -430,17 +489,21 @@ sptr<AST> PowAST::parse(PARSER_FN_PARAM) {
 // LorAST
 
 LorAST::LorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::LOR;
-    this->op_view = "||";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::LOR;
+    this->op_view          = "||";
     this->const_folding_fn = {
-        {std::make_tuple("bool","bool"), nlambda (String v1, String v2) {return (v1 == "true"s || v2 == "true")? "true"s : "false"s;} }
-    };
+        {std::make_tuple("bool", "bool"),
+         nlambda(String v1, String v2) {return (v1 == "true"s || v2 == "true") ? "true"s : "false"s;
+}
+}
+}
+;
 }
 
-LorAST::~LorAST(){};
+LorAST::~LorAST() {};
 
 String LorAST::emitLL(int* locc, String inp) const {
     String op  = "or";
@@ -452,6 +515,7 @@ String LorAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
+
 sptr<AST> LorAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "LorAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::LOR, LorAST);
@@ -461,17 +525,21 @@ sptr<AST> LorAST::parse(PARSER_FN_PARAM) {
 // LandAST
 
 LandAST::LandAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::LAND;
-    this->op_view = "&&";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::LAND;
+    this->op_view          = "&&";
     this->const_folding_fn = {
-        {std::make_tuple("bool","bool"), nlambda (String v1, String v2) {return (v1 == "true"s && v2 == "true")? "true"s : "false"s;} }
-    };
+        {std::make_tuple("bool", "bool"),
+         nlambda(String v1, String v2) {return (v1 == "true"s && v2 == "true") ? "true"s : "false"s;
+}
+}
+}
+;
 }
 
-LandAST::~LandAST(){};
+LandAST::~LandAST() {};
 
 String LandAST::emitLL(int* locc, String inp) const {
     String op  = "and";
@@ -483,6 +551,7 @@ String LandAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
+
 sptr<AST> LandAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "LandAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::LAND, LandAST);
@@ -492,11 +561,11 @@ sptr<AST> LandAST::parse(PARSER_FN_PARAM) {
 // OrAST
 
 OrAST::OrAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::OR;
-    this->op_view = "|";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::OR;
+    this->op_view          = "|";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, |),
         CF_FUN_INT("uint16", "uint16", uint16, |),
@@ -509,6 +578,7 @@ OrAST::OrAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
         CF_FUN_INT("int64", "int64", int64, |),
     };
 }
+
 String OrAST::emitLL(int* locc, String inp) const {
     String op  = "or";
     String inc = "{} = "s + op + " " + getLLType() + " {}, {}\n";
@@ -519,6 +589,7 @@ String OrAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
+
 sptr<AST> OrAST::parse(PARSER_FN_PARAM) {
     DEBUG(2, "OrAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::OR, OrAST);
@@ -528,11 +599,11 @@ sptr<AST> OrAST::parse(PARSER_FN_PARAM) {
 // AndAST
 
 AndAST::AndAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::AND;
-    this->op_view = "&";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::AND;
+    this->op_view          = "&";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, &),
         CF_FUN_INT("uint16", "uint16", uint16, &),
@@ -556,6 +627,7 @@ String AndAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
+
 sptr<AST> AndAST::parse(lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type) {
     DEBUG(2, "AndAST::parse");
     STANDARD_MATH_PARSE(lexer::Token::AND, AddAST);
@@ -565,11 +637,11 @@ sptr<AST> AndAST::parse(lexer::TokenStream tokens, int local, symbol::Namespace*
 // XorAST
 
 XorAST::XorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
-    this->left   = left;
-    this->right  = right;
-    this->tokens = tokens;
-    this->op     = lexer::Token::XOR;
-    this->op_view = "^";
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::XOR;
+    this->op_view          = "^";
     this->const_folding_fn = {
         CF_FUN_INT("uint8", "uint8", uint8, ^),
         CF_FUN_INT("uint16", "uint16", uint16, ^),
@@ -593,6 +665,7 @@ String XorAST::emitLL(int* locc, String inp) const {
 
     return r + inp;
 }
+
 sptr<AST> XorAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mXorAST::parse\e[0m");
     STANDARD_MATH_PARSE(lexer::Token::XOR, XorAST);
@@ -602,26 +675,29 @@ sptr<AST> XorAST::parse(PARSER_FN_PARAM) {
 // NotAST
 
 NotAST::NotAST(sptr<AST> inner, lexer::TokenStream tokens) {
-    this->left   = inner;
-    this->tokens = tokens;
-    this->op     = lexer::Token::NOT;
-    this->op_view = "!";
-    this->const_folding_fn = {
-        {"bool", nlambda (String v) {return (v == "true" ? "false"s : "true"s);} }
-    };
+    this->left             = inner;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::NOT;
+    this->op_view          = "!";
+    this->const_folding_fn = {{"bool", nlambda(String v) {return (v == "true" ? "false"s : "true"s);
+}
+}
+}
+;
 }
 
-#define UNARY_MATH_PARSE(tokentype, type1, after)                                                                      \
-    if (tokens.size() == 0)                                                                                            \
-        return nullptr;                                                                                                \
-    if (tokens[0].type == tokentype) {                                                                                 \
-        sptr<AST> of = math::parse(tokens.slice(1, 1, tokens.size()), local, sr);                                      \
-        if (of == nullptr) {                                                                                           \
-            parser::error("Expression expected", tokens.slice(1, 1, 1),                                                \
-                          "Expected espression of type \e[1m"s + expected_type + "\e[0m after " + after, 111);         \
-            return share<AST>(new AST);                                                                                \
-        }                                                                                                              \
-        return share<AST>(new type1(of, tokens));                                                                   \
+#define UNARY_MATH_PARSE(tokentype, type1, after)                                                        \
+    if (tokens.size() == 0) return nullptr;                                                              \
+    if (tokens[0].type == tokentype) {                                                                   \
+        sptr<AST> of = math::parse(tokens.slice(1, 1, tokens.size()), local, sr);                        \
+        if (of == nullptr) {                                                                             \
+            parser::error("Expression expected",                                                         \
+                          tokens.slice(1, 1, 1),                                                         \
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m after " + after, \
+                          111);                                                                          \
+            return share<AST>(new AST);                                                                  \
+        }                                                                                                \
+        return share<AST>(new type1(of, tokens));                                                        \
     }
 
 sptr<AST> NotAST::parse(PARSER_FN_PARAM) {
@@ -634,21 +710,39 @@ sptr<AST> NotAST::parse(PARSER_FN_PARAM) {
 // NegAST
 
 NegAST::NegAST(sptr<AST> inner, lexer::TokenStream tokens) {
-    this->left    = inner;
-    this->tokens  = tokens;
-    this->op      = lexer::Token::NEG;
-    this->op_view = "~";
-    this->const_folding_fn = {
-        {"uint8"s,  nlambda (String v) {return std::to_string(~(uint8) (std::stoi(v)));}  },
-        {"uint16"s, nlambda (String v) {return std::to_string(~(uint16)(std::stoi(v)));}  },
-        {"uint32"s, nlambda (String v) {return std::to_string(~(uint32)(std::stol(v)));}  },
-        {"uint64"s, nlambda (String v) {return std::to_string(~(uint64)(std::stoll(v)));} },
-        
-        {"int8"s,  nlambda (String v) {return std::to_string(~(int8) (std::stoi(v)));}  },
-        {"int16"s, nlambda (String v) {return std::to_string(~(int16)(std::stoi(v)));}  },
-        {"int32"s, nlambda (String v) {return std::to_string(~(int32)(std::stol(v)));}  },
-        {"int64"s, nlambda (String v) {return std::to_string(~(int64)(std::stoll(v)));} },
-    };
+    this->left             = inner;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::NEG;
+    this->op_view          = "~";
+    this->const_folding_fn = {{"uint8"s, nlambda(String v) {return std::to_string(~(uint8) (std::stoi(v)));
+}
+}
+, {"uint16"s, nlambda(String v) {return std::to_string(~(uint16) (std::stoi(v)));
+}
+}
+, {"uint32"s, nlambda(String v) {return std::to_string(~(uint32) (std::stol(v)));
+}
+}
+, {"uint64"s, nlambda(String v) {return std::to_string(~(uint64) (std::stoll(v)));
+}
+}
+,
+
+    {"int8"s, nlambda(String v) {return std::to_string(~(int8) (std::stoi(v)));
+}
+}
+, {"int16"s, nlambda(String v) {return std::to_string(~(int16) (std::stoi(v)));
+}
+}
+, {"int32"s, nlambda(String v) {return std::to_string(~(int32) (std::stol(v)));
+}
+}
+, {"int64"s, nlambda(String v) {return std::to_string(~(int64) (std::stoll(v)));
+}
+}
+,
+}
+;
 }
 
 sptr<AST> NegAST::parse(PARSER_FN_PARAM) {
@@ -660,21 +754,30 @@ sptr<AST> NegAST::parse(PARSER_FN_PARAM) {
 
 // AddrOfAST
 
-AddrOfAST::AddrOfAST(sptr<AST> of) { this->of = of; }
+AddrOfAST::AddrOfAST(sptr<AST> of) {
+    this->of = of;
+}
 
-AddrOfAST::~AddrOfAST(){};
-String AddrOfAST::getLLType() const { return of->getLLType() + "*"; }
+AddrOfAST::~AddrOfAST() {};
 
-String AddrOfAST::emitCST() const { return String("#") + of->emitCST(); }
-String AddrOfAST::emitLL(int*, String) const { return ""; }
+String AddrOfAST::getLLType() const {
+    return of->getLLType() + "*";
+}
+
+String AddrOfAST::emitCST() const {
+    return String("#") + of->emitCST();
+}
+
+String AddrOfAST::emitLL(int*, String) const {
+    return "";
+}
 
 sptr<AST> math::parse_pt(PARSER_FN_PARAM) {
-    if (tokens.size() < 2)
-        return nullptr;
+    if (tokens.size() < 2) { return nullptr; }
     if (tokens[0].type == lexer::Token::Type::OPEN) {
         if (tokens[-1].type == lexer::Token::Type::CLOSE) {
             DEBUG(2, "PT::parse");
-            return math::parse(tokens.slice(1, 1, tokens.size()-1), local + 1, sr, expected_type);
+            return math::parse(tokens.slice(1, 1, tokens.size() - 1), local + 1, sr, expected_type);
         }
     }
 
@@ -689,16 +792,15 @@ CastAST::CastAST(sptr<AST> from, sptr<AST> type, lexer::TokenStream tokens) {
 
 sptr<AST> CastAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mCastAST::parse\e[0m");
-    if (tokens.size() < 3)
-        return nullptr;
+    if (tokens.size() < 3) { return nullptr; }
     lexer::TokenStream::Match m = tokens.splitStack({lexer::Token::AS});
     if (m.found()) {
         DEBUG(2, "CastAST::parse");
-        if ((uint64)m == tokens.size() - 1) {
+        if ((uint64) m == tokens.size() - 1) {
             parser::error("Expected type", tokens.getTS(m), "Expected a type after 'as'", 25);
             return share<AST>(new AST);
         }
-        if ((uint64)m == 0) {
+        if ((uint64) m == 0) {
             parser::error("Expression expected", tokens.getTS(0), "Expected a valid expression", 31);
             return share<AST>(new AST());
         }
@@ -717,12 +819,16 @@ sptr<AST> CastAST::parse(PARSER_FN_PARAM) {
     return nullptr;
 }
 
-String CastAST::emitCST() const { return from->emitCST() + " as " + type->emitCST(); }
+String CastAST::emitCST() const {
+    return from->emitCST() + " as " + type->emitCST();
+}
 
 void CastAST::forceType(String t) {
     if (getCstType() != t) {
-        parser::error("Type mismatch", tokens,
-                      String("expected a \e[1m") + t + "\e[0m, got a variable cast returning " + getCstType(), 17,
+        parser::error("Type mismatch",
+                      tokens,
+                      String("expected a \e[1m") + t + "\e[0m, got a variable cast returning " + getCstType(),
+                      17,
                       "Caused by");
     }
 }
@@ -731,14 +837,14 @@ String CastAST::emitLL(int* locc, String inp) const {
     String in_type  = from->getCstType();
     String out_type = type->getCstType();
 
-    if (in_type == "char")
+    if (in_type == "char") {
         in_type = "int16"; // chars are unicode
-    if (out_type == "char")
+    }
+    if (out_type == "char") {
         out_type = "int16"; // chars are unicode
-    if (in_type == "bool")
-        in_type = "int1";
-    if (out_type == "bool")
-        out_type = "int1";
+    }
+    if (in_type == "bool") { in_type = "int1"; }
+    if (out_type == "bool") { out_type = "int1"; }
     String     op = "";
     String     s  = "";
     std::regex i("u?int(1|8|16|32|64|128)");
@@ -749,11 +855,13 @@ String CastAST::emitLL(int* locc, String inp) const {
         int bits_in  = std::stoi(in_type.substr(3 + uint(in_type[0] == 'u')));
         int bits_out = std::stoi(out_type.substr(3 + uint(out_type[0] == 'u')));
 
-        if (bits_in > bits_out)
+        if (bits_in > bits_out) {
             op = String("{} = trunc ") + parser::LLType(in_type) + " {} to " + parser::LLType(out_type) + "\n";
-        if (bits_in < bits_out)
+        }
+        if (bits_in < bits_out) {
             op = String("{} = zext ") + (in_type[0] == 'u' ? String(" ") : String("")) + parser::LLType(in_type) +
                  " {} to " + parser::LLType(out_type) + "\n";
+        }
         if (op != "") {
             s   = from->emitLL(locc, op);
             s   = insert(String("%") + std::to_string(++(*locc)), s);
@@ -767,10 +875,12 @@ String CastAST::emitLL(int* locc, String inp) const {
         int bits_in  = std::stoi(in_type.substr(5));
         int bits_out = std::stoi(out_type.substr(5));
 
-        if (bits_in > bits_out)
+        if (bits_in > bits_out) {
             op = String("{} = fptrunc nsz ") + parser::LLType(in_type) + " {} to " + parser::LLType(out_type) + "\n";
-        if (bits_in < bits_out)
+        }
+        if (bits_in < bits_out) {
             op = String("{} = fpext nsz ") + parser::LLType(in_type) + " {} to " + parser::LLType(out_type) + "\n";
+        }
         if (op != "") {
             s   = from->emitLL(locc, op);
             s   = insert(String("%") + std::to_string(++(*locc)), s);
@@ -804,7 +914,7 @@ String CastAST::emitLL(int* locc, String inp) const {
     }
     if (out_type == in_type + '?') {
         s = from->emitLL(locc, op);
-        s = insert(String("%") + std::to_string((*locc)), s);
+        s = insert(String("%") + std::to_string(*locc), s);
         inp =
             rinsert("{ "s + parser::LLType(in_type) + " " + String("%") + std::to_string(*locc) + " , i1 false }", inp);
     }
@@ -813,8 +923,7 @@ String CastAST::emitLL(int* locc, String inp) const {
 }
 
 sptr<AST> CheckAST::parse(PARSER_FN_PARAM) {
-    if (tokens.size() == 0)
-        return nullptr;
+    if (tokens.size() == 0) { return nullptr; }
     if (tokens[-1].type == lexer::Token::QM) {
         DEBUG(2, "CheckAST::parse");
         sptr<AST> of = math::parse(tokens.slice(0, 1, -1), local, sr, expected_type);
@@ -822,8 +931,10 @@ sptr<AST> CheckAST::parse(PARSER_FN_PARAM) {
             if (tokens.size() == 1) {
                 parser::error("Expected expression", tokens, "expected an expression before '?'", 31);
             } else {
-                parser::error("Expected expression", tokens.slice(0, 1, -1),
-                              "expected a valid expression before '?'", 31);
+                parser::error("Expected expression",
+                              tokens.slice(0, 1, -1),
+                              "expected a valid expression before '?'",
+                              31);
             }
             return nullptr;
         }
@@ -834,28 +945,29 @@ sptr<AST> CheckAST::parse(PARSER_FN_PARAM) {
 
 void CheckAST::forceType(CstType type) {
     if (!(type != of->getCstType() + '?')) {
-        parser::error("Type mismatch", tokens,
-                      String("expected a \e[1m") + type + "\e[0m, got an optional check returning " + getCstType(), 17);
+        parser::error("Type mismatch",
+                      tokens,
+                      String("expected a \e[1m") + type + "\e[0m, got an optional check returning " + getCstType(),
+                      17);
     }
 }
 
 String CheckAST::emitLL(int* locc, String inp) const {
-    String s = of->emitLL(locc, "");
-    s += "%"s + std::to_string(++(*locc)) + " = extractvalue " + parser::LLType(of->getCstType()) + " %" +
-         std::to_string((*locc)) + ", 1\n";
-    s += "br i1 %"s + std::to_string((*locc)) + ", label %l" + std::to_string((*locc)) + ", label %l" +
+    String s  = of->emitLL(locc, "");
+    s        += "%"s + std::to_string(++(*locc)) + " = extractvalue " + parser::LLType(of->getCstType()) + " %" +
+         std::to_string(*locc) + ", 1\n";
+    s += "br i1 %"s + std::to_string(*locc) + ", label %l" + std::to_string(*locc) + ", label %l" +
          std::to_string((*locc) + 1) + "\n";
-    s += "l" + std::to_string((*locc)) + ":\n";
+    s += "l" + std::to_string(*locc) + ":\n";
     s += "l" + std::to_string((*locc) + 1) + ":\n";
     s += "%"s + std::to_string(++(*locc)) + " = extractvalue " + parser::LLType(of->getCstType()) + " %" +
          std::to_string((*locc) - 1) + ", 0\n";
-    return s + insert("%" + std::to_string(((*locc)++)), inp);
+    return s + insert("%" + std::to_string((*locc)++), inp);
 }
 
 sptr<AST> NoWrapAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mNoWrapAST::parse\e[0m");
-    if (tokens.size() < 3)
-        return nullptr;
+    if (tokens.size() < 3) { return nullptr; }
     if (tokens[0].type == lexer::Token::NOWRAP) {
         DEBUGT(2, "NoWrapAST::parse", &tokens);
         if (tokens[1].type != lexer::Token::OPEN) {
@@ -863,16 +975,21 @@ sptr<AST> NoWrapAST::parse(PARSER_FN_PARAM) {
             return share<AST>(new AST);
         }
         if (tokens[-1].type != lexer::Token::CLOSE) {
-            parser::error("Expected Block close", {tokens[-1]}, "Expected a ')' token after '"s + tokens[-1].value + "'", 0);
+            parser::error("Expected Block close",
+                          {tokens[-1]},
+                          "Expected a ')' token after '"s + tokens[-1].value + "'",
+                          0);
             return share<AST>(new AST);
         }
         sptr<AST> a = math::parse(tokens.slice(2, 1, -1), local + 1, sr);
         if (a == nullptr) {
-            parser::error("Expression expected", tokens.slice(2, 1, -1), "Expected a valid expression in nowrap block",
+            parser::error("Expression expected",
+                          tokens.slice(2, 1, -1),
+                          "Expected a valid expression in nowrap block",
                           0);
             return share<AST>(new AST);
         }
-        if (!instanceOf(a, DoubleOperandAST)) { // currently, nowrap can only be used on operators. Unary operands (~ and !) never wrap and only double have to be checked
+        if (! instanceOf(a, DoubleOperandAST)) { // currently, nowrap can only be used on operators. Unary operands (~ and !) never wrap and only double have to be checked
             return a;
         }
         return share<AST>(new NoWrapAST(a, tokens));

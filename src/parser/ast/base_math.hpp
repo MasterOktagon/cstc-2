@@ -6,13 +6,15 @@
 // layouts base math ASTs
 //
 
+#include "../../lexer/token.hpp"
+#include "../../snippets.h"
+#include "../symboltable.hpp"
 #include "ast.hpp"
+#include "../errors.hpp"
+
 #include <map>
 #include <tuple>
 #include <vector>
-#include "../../lexer/token.hpp"
-#include "../symboltable.hpp"
-#include "../../snippets.h"
 
 /**
  * @namespace that includes the "default" expression parsing functions
@@ -21,176 +23,170 @@ namespace math {
 
     /**
      * @brief parse an expression (e.g. variable call, function call, literal, math, ...)
-     * 
+     *
      * @return AST or nullptr if nothing matched
      */
     extern sptr<AST> parse(PARSER_FN);
 
     /**
      * @brief parse paranthesis (with an expression inside)
-     * 
+     *
      * @return AST or nullptr if nothing matched
      */
     extern sptr<AST> parse_pt(PARSER_FN);
-}
+} // namespace math
 
 /**
  * @class for generic expression ASTs
  */
 class ExpressionAST : public AST {
     public:
-    ExpressionAST(){};
-    virtual ~ExpressionAST(){};
+        ExpressionAST() {};
+        virtual ~ExpressionAST() {};
 };
 
 class DoubleOperandAST : public ExpressionAST {
     protected:
-    sptr<AST> left;  //> left operand
-    sptr<AST> right; //> right operand
-    lexer::Token::Type op = lexer::Token::NONE;
-    String             op_view = "";
-    std::map<std::tuple<CstType, CstType>, fsignal<String, String, String>> const_folding_fn = {};
+        sptr<AST>                                                               left;  //> left operand
+        sptr<AST>                                                               right; //> right operand
+        lexer::Token::Type                                                      op               = lexer::Token::NONE;
+        String                                                                  op_view          = "";
+        std::map<std::tuple<CstType, CstType>, fsignal<String, String, String>> const_folding_fn = {};
 
-    String _str() const final;
-    
+        String _str() const final;
+
     public:
-    DoubleOperandAST() {};
-    virtual ~DoubleOperandAST(){};
+        DoubleOperandAST() {};
+        virtual ~DoubleOperandAST() {};
 
-    LLType getLLType()   const final;
-    CstType getCstType() const final;
-    void    forceType(CstType) final;
-    String  emitCST() const final;
+        LLType  getLLType() const final;
+        CstType getCstType() const final;
+        void    forceType(CstType) final;
+        String  emitCST() const final;
 
-    uint64 nodeSize() const final;
+        uint64 nodeSize() const final;
 };
 
 class UnaryOperandAST : public ExpressionAST {
     protected:
-    sptr<AST> left;  //> left operand
-    lexer::Token::Type op = lexer::Token::NONE;
-    String             op_view = "";
-    std::map<CstType, fsignal<String, String>> const_folding_fn = {};
+        sptr<AST>                                  left; //> left operand
+        lexer::Token::Type                         op               = lexer::Token::NONE;
+        String                                     op_view          = "";
+        std::map<CstType, fsignal<String, String>> const_folding_fn = {};
 
-    String _str() const final;
-    
+        String _str() const final;
+
     public:
-    UnaryOperandAST() {};
-    virtual ~UnaryOperandAST(){};
+        UnaryOperandAST() {};
+        virtual ~UnaryOperandAST() {};
 
-    // fwd declarations. @see @class AST 
-    
-    LLType getLLType()   const final;
-    CstType getCstType() const final;
-    void forceType(CstType) final;
-    String emitCST() const final;
+        // fwd declarations. @see @class AST
 
-    uint64 nodeSize() const final;
+        LLType  getLLType() const final;
+        CstType getCstType() const final;
+        void    forceType(CstType) final;
+        String  emitCST() const final;
+
+        uint64 nodeSize() const final;
 };
 
 /**
  * @class that represents a '+' operation
  */
 class AddAST : public DoubleOperandAST {
-
     public:
-    AddAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~AddAST();
+        AddAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~AddAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse an addition or subtraction (due to both having the same precedences)
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse an addition or subtraction (due to both having the same precedences)
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
  * @class that represents a '-' operation
  */
 class SubAST : public DoubleOperandAST {
-
     public:
-    SubAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~SubAST();
+        SubAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~SubAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 };
 
 /**
  * @class that represents a '*' operation
  */
 class MulAST : public DoubleOperandAST {
-
     public:
-    MulAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~MulAST();
+        MulAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~MulAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
  * @class that represents a '/' operation
  */
 class DivAST : public DoubleOperandAST {
-
     public:
-    DivAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~DivAST();
+        DivAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~DivAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 };
 
 /**
  * @class that represents a '%' operation
  */
 class ModAST : public DoubleOperandAST {
-
     public:
-    ModAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~ModAST();
+        ModAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~ModAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 };
 
 /**
  * @class that represents a '**' operation
  */
 class PowAST : public DoubleOperandAST {
-
     public:
-    PowAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~PowAST();
+        PowAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~PowAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse a power
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a power
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
@@ -198,19 +194,19 @@ class PowAST : public DoubleOperandAST {
  */
 class LorAST : public DoubleOperandAST {
     public:
-    LorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~LorAST();
+        LorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~LorAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse a logical and
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a logical and
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
@@ -218,19 +214,19 @@ class LorAST : public DoubleOperandAST {
  */
 class LandAST : public DoubleOperandAST {
     public:
-    LandAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~LandAST();
+        LandAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~LandAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a multiplication, division or remainder (modulo) (due to them having the same precedences)
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
@@ -238,19 +234,19 @@ class LandAST : public DoubleOperandAST {
  */
 class OrAST : public DoubleOperandAST {
     public:
-    OrAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~OrAST() = default;
+        OrAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~OrAST() = default;
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse a bitwise or
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a bitwise or
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
@@ -258,19 +254,19 @@ class OrAST : public DoubleOperandAST {
  */
 class AndAST : public DoubleOperandAST {
     public:
-    AndAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~AndAST() = default;
+        AndAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~AndAST() = default;
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse a bitwise and
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a bitwise and
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
@@ -278,19 +274,19 @@ class AndAST : public DoubleOperandAST {
  */
 class XorAST : public DoubleOperandAST {
     public:
-    XorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
-    virtual ~XorAST() = default;
+        XorAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~XorAST() = default;
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const;
+        virtual String emitLL(int*, String) const;
 
-    /**
-     * @brief parse a xor
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a xor
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
@@ -298,18 +294,19 @@ class XorAST : public DoubleOperandAST {
  */
 class NotAST : public UnaryOperandAST {
     public:
-    NotAST(sptr<AST> inner, lexer::TokenStream tokens);
-    virtual ~NotAST() = default;
+        NotAST(sptr<AST> inner, lexer::TokenStream tokens);
+        virtual ~NotAST() = default;
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const {return "";}
-    /**
-     * @brief parse a not
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        virtual String emitLL(int*, String) const { return ""; }
+
+        /**
+         * @brief parse a not
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
@@ -317,136 +314,147 @@ class NotAST : public UnaryOperandAST {
  */
 class NegAST : public UnaryOperandAST {
     public:
-    NegAST(sptr<AST> inner, lexer::TokenStream tokens);
-    virtual ~NegAST() = default;
+        NegAST(sptr<AST> inner, lexer::TokenStream tokens);
+        virtual ~NegAST() = default;
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    virtual String emitLL  (int*, String) const {return "";}
+        virtual String emitLL(int*, String) const { return ""; }
 
-    /**
-     * @brief parse a bitwise negation
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        /**
+         * @brief parse a bitwise negation
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
  * @class that represents an 'as' cast operation
  */
 class CastAST : public ExpressionAST {
-    sptr<AST> from;
-    sptr<AST> type;
+        sptr<AST> from;
+        sptr<AST> type;
 
     public:
-    CastAST(sptr<AST> from, sptr<AST> type, lexer::TokenStream tokens);
-    virtual ~CastAST(){};
+        CastAST(sptr<AST> from, sptr<AST> type, lexer::TokenStream tokens);
+        virtual ~CastAST() {};
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    CstType getCstType() const { return type->getCstType(); }
-    LLType  getLLType () const { return type->getLLType(); }
+        CstType getCstType() const { return type->getCstType(); }
 
-    virtual uint64 nodeSize () const { return 1; }
-    virtual String emitLL   (int*, String) const;
-    virtual String emitCST  () const;
+        LLType getLLType() const { return type->getLLType(); }
 
-    virtual void forceType (String type);
+        virtual uint64 nodeSize() const { return 1; }
 
-    /**
-     * @brief parse a cast
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        virtual String emitLL(int*, String) const;
+        virtual String emitCST() const;
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a cast
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
  * @class that represents an check-and-unwrap operation
  */
 class CheckAST : public ExpressionAST {
-    sptr<AST> of;
+        sptr<AST> of;
 
     public:
-    CheckAST(sptr<AST> of, lexer::TokenStream tokens){this->of = of; this->tokens = tokens;}
-    virtual ~CheckAST(){};
+        CheckAST(sptr<AST> of, lexer::TokenStream tokens) {
+            this->of     = of;
+            this->tokens = tokens;
+        }
 
-    // fwd declarations. @see @class AST
-    
-    CstType getCstType() const {
-        if (of->getCstType() == "") return "";
-        return of->getCstType().substr(0, of->getCstType().size()-1);
-    }
-    LLType getLLType() const { return ""; }
+        virtual ~CheckAST() {};
 
-    virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
-    virtual String emitLL(int*, String) const;
+        // fwd declarations. @see @class AST
 
-    String emitCST() const { return of->emitCST() + "?"; }
-    
-    void forceType(CstType type);
+        CstType getCstType() const {
+            if (of->getCstType() == "") { return ""; }
+            return of->getCstType().substr(0, of->getCstType().size() - 1);
+        }
 
-    /**
-     * @brief parse a cast
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        LLType getLLType() const { return ""; }
+
+        virtual uint64 nodeSize() const { return 1; } // how many nodes to to do
+
+        virtual String emitLL(int*, String) const;
+
+        String emitCST() const { return of->emitCST() + "?"; }
+
+        void forceType(CstType type);
+
+        /**
+         * @brief parse a cast
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 class NoWrapAST : public ExpressionAST {
-    sptr<AST> of;
+        sptr<AST> of;
 
     protected:
-    String _str() const {
-        return "<NOWRAP "s + str(of.get()) + ">";
-    }
-    
+        String _str() const { return "<NOWRAP "s + str(of.get()) + ">"; }
+
     public:
-    NoWrapAST(sptr<AST> of, lexer::TokenStream tokens){this->of = of; this->tokens = tokens;}
-    virtual ~NoWrapAST(){};
+        NoWrapAST(sptr<AST> of, lexer::TokenStream tokens) {
+            this->of     = of;
+            this->tokens = tokens;
+        }
 
-    // fwd declarations. @see @class AST
-    
-    CstType getCstType() const {
-        return of->getCstType();
-    }
-    LLType getLLType() const { return of->getLLType(); }
+        virtual ~NoWrapAST() {};
 
-    virtual uint64 nodeSize() const {return of->nodeSize()+1;} // how many nodes to to do
-    virtual String emitLL(int*, String s) const {return s;}
+        // fwd declarations. @see @class AST
 
-    String emitCST() const { return "nowrap("s + of->emitCST() + ")"; }
-    
-    void forceType(CstType type);
+        CstType getCstType() const { return of->getCstType(); }
 
-    /**
-     * @brief parse a nowrap call
-     * 
-     * @return AST or nullptr if no match
-     */
-    static sptr<AST> parse(PARSER_FN);
+        LLType getLLType() const { return of->getLLType(); }
+
+        virtual uint64 nodeSize() const { return of->nodeSize() + 1; } // how many nodes to to do
+
+        virtual String emitLL(int*, String s) const { return s; }
+
+        String emitCST() const { return "nowrap("s + of->emitCST() + ")"; }
+
+        void forceType(CstType type);
+
+        /**
+         * @brief parse a nowrap call
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 /**
  * @class that represents an check-and-unwrap operation
  */
 class AddrOfAST : public ExpressionAST {
-    sptr<AST> of;
+        sptr<AST> of;
 
     public:
-    AddrOfAST(sptr<AST> of);
-    virtual ~AddrOfAST();
+        AddrOfAST(sptr<AST> of);
+        virtual ~AddrOfAST();
 
-    // fwd declarations. @see @class AST 
+        // fwd declarations. @see @class AST
 
-    CstType getCstType() const { return of->getCstType()+"*"; }
-    LLType getLLType() const;
+        CstType getCstType() const { return of->getCstType() + "*"; }
 
-    virtual uint64 nodeSize() const {return 1;} // how many nodes to to do
-    virtual String emitLL(int*, String) const;
+        LLType getLLType() const;
 
-    String emitCST() const;
+        virtual uint64 nodeSize() const { return 1; } // how many nodes to to do
+
+        virtual String emitLL(int*, String) const;
+
+        String emitCST() const;
 };
-
