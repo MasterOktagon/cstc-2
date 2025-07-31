@@ -13,7 +13,10 @@
 namespace parser {
     extern uint64 errc;
     extern uint64 warnc;
-    extern bool one_error;
+    extern bool   one_error;
+
+    extern void mute();
+    extern void unmute();
 
     extern void error(String name, lexer::TokenStream tokens, String msg, uint32 code, String appendix="");
     extern void warn (String name, lexer::TokenStream tokens, String msg, uint32 code, String appendix="");

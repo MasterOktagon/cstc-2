@@ -15,9 +15,18 @@
 
 uint64 parser::errc = 0;
 uint64 parser::warnc = 0;
-bool parser::one_error = false;
+bool   parser::one_error = false;
+bool   muted             = false;
+
+void parser::mute() {
+    muted = true;
+}
+void parser::unmute() {
+    muted = false;
+}
 
 void parser::showError(String errstr, String errcol, String errcol_lite, String name, String msg, std::vector<lexer::Token> tokens, uint32 code, String appendix){
+    if (muted) return;
     if (tokens.size() == 0) {
         std::cerr << "OH NO! " << errstr << " " << name << " could not be displayed:\n" << intab(msg) << "\n";
         return;
