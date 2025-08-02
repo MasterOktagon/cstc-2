@@ -286,11 +286,23 @@ sptr<AST> FuncDefAST::parse(PARSER_FN_PARAM) {
             m = param_buffer.rsplitStack({lexer::Token::SET});
             String pname;
             if (m.found()) {
+                if (param_buffer[(uint64)m - 1].type != lexer::Token::ID){
+                    parser::error("Name expected", {param_buffer[(uint64)m - 1]}, "expected a valid name for this parameter", 0);
+                    return ERR;
+                }
                 last_named = param_buffer[(uint64)m - 1];
                 pname      = last_named.value;
 
                 sptr<AST> type = Type::parse(m.before().slice(0, 1, -1), local, sr);
-                // TODO
+                if (type == nullptr){
+                    if ((uint64)m < 2){
+                        parser::error("Type expected", {param_buffer[m]}, "Expected a type before '"s + lexer::getTokenName(param_buffer[m].type) + "'", 0);
+                    }
+                    else {
+                        parser::error("Type expected", param_buffer, "expected a type", 0);
+                    }
+                    return ERR;
+                }
                 
             } else {
                 

@@ -8,6 +8,7 @@
 #include "../symboltable.hpp"
 #include "../../debug/debug.hpp"
 #include "../parser.hpp"
+#include "func.hpp"
 #include "import.hpp"
 #include "namespace.hpp"
 #include "struct.hpp"
@@ -60,7 +61,7 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
             sptr<AST> expr = parser::parseOneOf(
                 buffer, {
                             NamespaceAST::parse, VarInitlAST::parse,
-                            VarDeclAST::parse, parseStatement, EnumAST::parse, IfAST::parse,
+                            VarDeclAST::parse, parseStatement, EnumAST::parse, IfAST::parse, FuncDefAST::parse,
                             ImportAST::parse
                         }, local, sr, "void");
 
