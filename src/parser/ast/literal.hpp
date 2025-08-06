@@ -8,144 +8,194 @@
 
 #include "../symboltable.hpp"
 #include "ast.hpp"
+
 #include <string>
 
 extern AST* parse_neg(std::vector<lexer::Token>, int local, symbol::Namespace* sr, String expected_type = "@unknown");
 
 class LiteralAST : public AST {
-
     public:
-    virtual ~LiteralAST(){};
-    virtual String getValue() const abstract;
-    virtual uint64 nodeSize() const final { return 1; }
+        virtual ~LiteralAST() {};
+        virtual String getValue() const abstract;
+
+        virtual uint64 nodeSize() const final { return 1; }
 };
 
 class IntLiteralAST : public LiteralAST {
-
-    int  bits    = 32;   //> Integer Bit size
-    bool tsigned = true; //> whether this integer is signed
+        int  bits    = 32;   //> Integer Bit size
+        bool tsigned = true; //> whether this integer is signed
 
     protected:
-    String _str() const { return "<Int: "s + value + " | " + std::to_string(bits) + ">"; }
+        String _str() const { return "<Int: "s + value + " | " + std::to_string(bits) + ">"; }
 
     public:
-    IntLiteralAST(int bits, String value, bool tsigned, lexer::TokenStream tokens);
-    virtual ~IntLiteralAST() {}
+        IntLiteralAST(int bits, String value, bool tsigned, lexer::TokenStream tokens);
 
-    // fwd declarations @see @class AST
+        virtual ~IntLiteralAST() {}
 
-    CstType        getCstType() const { return (tsigned ? "int"s : "uint"s) + std::to_string(bits); }
-    LLType         getLLType() const { return "i"s + std::to_string(bits); }
-    String         getValue() const { return value; }
-    virtual String emitLL(int*, String) const;
-    virtual String emitCST() const;
+        // fwd declarations @see @class AST
 
-    virtual void forceType(String type);
+        CstType getCstType() const { return (tsigned ? "int"s : "uint"s) + std::to_string(bits); }
 
-    /**
-     * @brief parse an int literal
-     *
-     * @return Int literal AST or nullptr is not found
-     */
-    static sptr<AST> parse(PARSER_FN);
+        LLType getLLType() const { return "i"s + std::to_string(bits); }
+
+        String getValue() const { return value; }
+
+        virtual String emitLL(int*, String) const;
+        virtual String emitCST() const;
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse an int literal
+         *
+         * @return Int literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 class BoolLiteralAST : public LiteralAST {
     protected:
-    String _str() const { return "<Bool: "s + value + ">"; }
+        String _str() const { return "<Bool: "s + value + ">"; }
 
     public:
-    BoolLiteralAST(String value, lexer::TokenStream tokens);
-    virtual ~BoolLiteralAST() {}
+        BoolLiteralAST(String value, lexer::TokenStream tokens);
 
-    // fwd declarations @see @class AST
+        virtual ~BoolLiteralAST() {}
 
-    CstType        getCstType() const { return "bool"; }
-    LLType         getLLType() const { return "i1"; }
-    String         getValue() const { return value; }
-    virtual String emitLL(int*, String) const;
-    virtual String emitCST() const;
+        // fwd declarations @see @class AST
 
-    virtual void forceType(String type);
+        CstType getCstType() const { return "bool"; }
 
-    /**
-     * @brief parse a bool literal
-     *
-     * @return bool literal AST or nullptr is not found
-     */
-    static sptr<AST> parse(PARSER_FN);
+        LLType getLLType() const { return "i1"; }
+
+        String getValue() const { return value; }
+
+        virtual String emitLL(int*, String) const;
+        virtual String emitCST() const;
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a bool literal
+         *
+         * @return bool literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 class FloatLiteralAST : public LiteralAST {
-
-    int    bits  = 32;  //> Float size (name)
+        int bits = 32; //> Float size (name)
 
     protected:
-    String _str() const { return "<Float: "s + value + " | " + std::to_string(bits) + ">"; }
+        String _str() const { return "<Float: "s + value + " | " + std::to_string(bits) + ">"; }
 
     public:
-    FloatLiteralAST(int bits, String value, lexer::TokenStream tokens);
-    virtual ~FloatLiteralAST() {}
-    CstType        getCstType() const { return "float"s + std::to_string(bits); }
-    LLType         getLLType() const;
-    String         getValue() const { return value; }
-    virtual String emitLL(int*, String) const;
-    virtual String emitCST() const;
-    virtual void   forceType(String type);
+        FloatLiteralAST(int bits, String value, lexer::TokenStream tokens);
 
-    /**
-     * @brief parse a float literal
-     *
-     * @return float literal AST or nullptr is not found
-     */
-    static sptr<AST> parse(PARSER_FN);
+        virtual ~FloatLiteralAST() {}
+
+        CstType getCstType() const { return "float"s + std::to_string(bits); }
+
+        LLType getLLType() const;
+
+        String getValue() const { return value; }
+
+        virtual String emitLL(int*, String) const;
+        virtual String emitCST() const;
+        virtual void   forceType(String type);
+
+        /**
+         * @brief parse a float literal
+         *
+         * @return float literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 class CharLiteralAST : public LiteralAST {
-
     protected:
-    String _str() const { return "<Char: '"s + value + "'>"; }
+        String _str() const { return "<Char: '"s + value + "'>"; }
 
     public:
-    CharLiteralAST(String value, lexer::TokenStream tokens);
-    virtual ~CharLiteralAST() {}
-    CstType        getCstType() const { return "char"; }
-    LLType         getLLType() const { return "i16"; };
-    String         getValue() const;
-    virtual String emitLL(int*, String) const;
-    virtual String emitCST() const { return value; };
+        CharLiteralAST(String value, lexer::TokenStream tokens);
 
-    virtual void forceType(String type);
+        virtual ~CharLiteralAST() {}
 
-    /**
-     * @brief parse a char literal
-     *
-     * @return char literal AST or nullptr is not found
-     */
-    static sptr<AST> parse(PARSER_FN);
+        CstType getCstType() const { return "char"; }
+
+        LLType getLLType() const { return "i16"; };
+
+        String         getValue() const;
+        virtual String emitLL(int*, String) const;
+
+        virtual String emitCST() const { return value; };
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a char literal
+         *
+         * @return char literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 class StringLiteralAST : public LiteralAST {
-
     protected:
-    String _str() const { return "<String: \""s + value + "\">"; }
+        String _str() const { return "<String: \""s + value + "\">"; }
 
     public:
-    StringLiteralAST(String value, lexer::TokenStream tokens);
-    virtual ~StringLiteralAST() {}
-    CstType getCstType() const { return "String"; }
-    LLType  getLLType() const { return "%std..lang..class.String"; };
-    String  getValue() const;
+        StringLiteralAST(String value, lexer::TokenStream tokens);
 
-    virtual String emitLL(int*, String) const; // TODO: think of a possible struct for string
-    virtual String emitCST() const { return value; };
+        virtual ~StringLiteralAST() {}
 
-    virtual void forceType(String type);
+        CstType getCstType() const { return "String"; }
 
-    /**
-     * @brief parse a string literal
-     *
-     * @return string literal AST or nullptr is not found
-     */
-    static sptr<AST> parse(PARSER_FN);
+        LLType getLLType() const { return "%std..lang..class.String"; };
+
+        String getValue() const;
+
+        virtual String emitLL(int*, String) const; // TODO: think of a possible struct for string
+
+        virtual String emitCST() const { return value; };
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a string literal
+         *
+         * @return string literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+
+class NullLiteralAST : public LiteralAST {
+    protected:
+        String _str() const { return "<NULL>"; }
+
+        CstType type = "";
+
+    public:
+        NullLiteralAST(lexer::TokenStream tokens){this->tokens = tokens;}
+
+        virtual ~NullLiteralAST() {}
+
+        CstType getCstType() const { return type; }
+
+        LLType getLLType() const { return ""; };
+
+        String getValue() const { return "null"; };
+
+        // virtual String emitLL(int*, String) const;
+        virtual String emitCST() const { return "null"; };
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a null literal
+         *
+         * @return null literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
 };

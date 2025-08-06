@@ -290,6 +290,126 @@ class XorAST : public DoubleOperandAST {
 };
 
 /**
+ * @class that represents a '==' operation
+ */
+class EqAST : public DoubleOperandAST {
+    public:
+        EqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~EqAST() = default;
+
+        // fwd declarations. @see @class AST
+
+        virtual String emitLL(int*, String) const;
+
+        /**
+         * @brief parse a xor
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+
+/**
+ * @class that represents a '!=' operation
+ */
+class NeqAST : public DoubleOperandAST {
+    public:
+        NeqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~NeqAST() = default;
+
+        // fwd declarations. @see @class AST
+
+        virtual String emitLL(int*, String) const;
+
+        /**
+         * @brief parse a xor
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+#if 0
+/**
+ * @class that represents a '>=' operation
+ */
+class GeqAST : public DoubleOperandAST {
+    public:
+        GeqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~GeqAST() = default;
+
+        // fwd declarations. @see @class AST
+
+        virtual String emitLL(int*, String) const;
+
+        /**
+         * @brief parse a xor
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+
+/**
+ * @class that represents a '<=' operation
+ */
+class LeqAST : public DoubleOperandAST {
+    public:
+        LeqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~LeqAST() = default;
+
+        // fwd declarations. @see @class AST
+
+        virtual String emitLL(int*, String) const;
+
+        /**
+         * @brief parse a xor
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+
+/**
+ * @class that represents a '>' operation
+ */
+class GtAST : public DoubleOperandAST {
+    public:
+        GtAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~GtAST() = default;
+
+        // fwd declarations. @see @class AST
+
+        virtual String emitLL(int*, String) const;
+
+        /**
+         * @brief parse a xor
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+
+/**
+ * @class that represents a '<' operation
+ */
+class LtAST : public DoubleOperandAST {
+    public:
+        LtAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens);
+        virtual ~LtAST() = default;
+
+        // fwd declarations. @see @class AST
+
+        virtual String emitLL(int*, String) const;
+
+        /**
+         * @brief parse a xor
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+#endif
+/**
  * @class that represents a '!' operation
  */
 class NotAST : public UnaryOperandAST {

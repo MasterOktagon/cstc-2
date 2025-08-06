@@ -267,6 +267,12 @@ parser::Modifier parser::getModifier(lexer::TokenStream& tokens) {
     return m;
 }
 
+void parser::checkName(String name, lexer::Token where) {
+    if (isAtomic(name)) {
+        error("Invalid name", {where},"the name "s + name + " is a atomic type and therefore not allowed as name.",0);
+    }
+}
+
 /*void parser::allowModifier(Modifier mod, Modifier in, lexer::TokenStream t) {
     for (Modifier i = Modifier::CONST; i < Modifier::END; i = Modifier(uint32(i) * 2)) { // iterate over all modifiers
         if (!(mod & in)) {

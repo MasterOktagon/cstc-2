@@ -82,7 +82,7 @@ sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
                         "The name "s + name + " refers to a scope or type and cannot be used as a variable name", 25);
                     return ERR;
                 }
-                if (!parser::is_snake_case(name)) {
+                if (!parser::is_snake_case(name) && !(m & parser::Modifier::CONST)) {
                     parser::warn("Wrong casing", {tokens[tokens.size() - 2]}, "Variable name should be snake_case", 16);
                 }
                 if (m & parser::Modifier::CONST) {
@@ -90,6 +90,13 @@ sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
                                   "A variable can only be const if an initialization is given", 25);
                     parser::note(tokens2, "remove the 'const' keyword to resolve this easily", 0);
                     return ERR;
+
+                    if (m & parser::Modifier::STATIC) {
+                        parser::warn(
+                            "Variable declared as constant and static", tokens2,
+                            "declaring a constant static is ambigous",
+                            0);
+                    }
                 }
                 else if (!(m & parser::Modifier::MUTABLE)) {
                     parser::error("immutable declaration without initialization", tokens2,
@@ -100,7 +107,10 @@ sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
                 if (!sr->ALLOWS_NON_STATIC && !(parser::Modifier::STATIC | parser::Modifier::CONST)) {
                     parser::error("only static variables allowed", tokens2,
                                   "only static variables are allowed in a Block of type "s + sr->getName(), 25);
-                                  
+                }
+                if (m & parser::Modifier::STATIC) {
+                    parser::error("static variable requires initial value", tokens2,
+                                  "a static variable requires a default value.", 25);
                 }
 
                 symbol::Variable* v     = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);

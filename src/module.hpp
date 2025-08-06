@@ -46,6 +46,10 @@ class Module final : public symbol::Namespace {
     bool isHeader() const;
     bool isKnown() const;
 
+    const String getName() const {
+        return "Module";
+    }
+
     /**
      * @brief tokenize this module and parse for imports to include them
      */

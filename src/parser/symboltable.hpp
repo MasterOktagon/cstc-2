@@ -2,6 +2,7 @@
 
 #include "../lexer/token.hpp"
 #include "../snippets.h"
+#include "ast/ast.hpp"
 
 #include <map>
 #include <string>
@@ -98,47 +99,18 @@ namespace symbol {
             const String getName() const { return "Variable"; };
     };
 
-    class Function : public Reference {
-            /**
-             * Reference that represents a function
-             */
-
-            String  name;
-            CstType type;
-
-        protected:
-            virtual String _str() const { return "symbol::Function "s + getLoc(); }
-
-        public:
-            std::vector<CstType> parameters;
-            std::vector<CstType> name_parameters;
-            bool                 is_method = false;
-
-            LLType getLLType() { return "void"s; }
-
-            String getLLName() { return getLLType() + (is_method ? "mthd."s : "fn."s) + name; }
-
-            CstType getCstType();
-
-            virtual ~Function() {};
-
-            virtual size sizeBytes() { return 8; }
-
-            const String getName() const { return "Function"; };
-    };
-
     class Namespace : public Reference {
             /**
              * Reference that can hold other references
              */
 
         protected:
-            std::vector<Namespace*>  include {};
             std::map<String, String> import_from = {}; //> import-from map
 
             virtual String _str() const { return "symbol::Namespace "s + getLoc(); }
 
         public:
+            std::vector<Namespace*>  include {};
             MultiMap<String, Reference*> contents     = {};
             std::vector<String>          unknown_vars = {};
             virtual void                 add(String loc, Reference* sr);
@@ -194,6 +166,37 @@ namespace symbol {
             };
 
             LinearitySnapshot snapshot() const;
+    };
+
+    class Function : public Namespace {
+            /**
+             * Reference that represents a function
+             */
+
+            String  name;
+            CstType type;
+
+        protected:
+            virtual String _str() const { return "symbol::Function "s + getLoc(); }
+
+        public:
+            std::vector<CstType> parameters;
+            std::map<String, std::pair<CstType, sptr<AST>>> name_parameters;
+            bool                 is_method = false;
+
+            Function(symbol::Reference* parent, String name, lexer::TokenStream tokens);
+
+            LLType getLLType() { return "void"s; }
+
+            String getLLName() { return getLLType() + (is_method ? "mthd."s : "fn."s) + name; }
+
+            CstType getCstType();
+
+            virtual ~Function() { Namespace::~Namespace(); };
+
+            virtual size sizeBytes() { return 8; }
+
+            const String getName() const { return "Function"; };
     };
 
     class Opaque {

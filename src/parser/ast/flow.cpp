@@ -69,6 +69,9 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
                 parser::error("Expected expression", buffer, "Expected a valid expression (Did you forget a ';'?)", 31);
             }
             else {
+                if(instanceOf(expr, ExpressionAST) && !sr->ALLOWS_EXPRESSIONS){
+                    parser::error("Expression forbidden", expr->getTokens(), "A Block of type "s + sr->getName() + " does not allow Expressions", 0);
+                } 
                 contents.push_back(expr);
             }
         }

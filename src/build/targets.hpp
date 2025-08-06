@@ -1,11 +1,12 @@
 #pragma once
-#include "../snippets.h"
-#include <vector>
 #include "../parser/symboltable.hpp"
+#include "../snippets.h"
+
+#include <vector>
 
 namespace target {
 
-    extern symbol::Function* entry;
+    extern symbol::Function*   entry;
     extern std::vector<String> target;
 
     const std::vector<String> targets = {
@@ -15,7 +16,7 @@ namespace target {
 
     /**
      * @brief ckecks if a target is a valid target
-    */
+     */
     extern bool isValid(String name);
 
     /**
@@ -27,20 +28,17 @@ namespace target {
      *     linux:x86:64
      *     linux:x86:64:llvm
      *     llvm
-    */
+     */
     extern bool is(String subtarget);
 
     /**
      * @brief set a target. @see @function is
-    */
+     */
     extern void set(String t);
 
     /**
      * @brief lists all available targets on the command line
-    */
+     */
     extern void list();
-}
-
-
-
+} // namespace target
 

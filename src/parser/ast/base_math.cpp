@@ -2,7 +2,6 @@
 
 #include "../../build/optimizer_flags.hpp"
 #include "../../debug/debug.hpp"
-#include "../../lexer/lexer.hpp"
 #include "../errors.hpp"
 #include "../parser.hpp"
 #include "../symboltable.hpp"
@@ -12,9 +11,8 @@
 #include "type.hpp"
 #include "var.hpp"
 
-//#include <catch2/catch.hpp>
+// #include <catch2/catch.hpp>
 #include <cmath>
-#include <iostream>
 #include <map>
 #include <regex>
 #include <string>
@@ -38,7 +36,7 @@ String DoubleOperandAST::_str() const {
 }
 
 String DoubleOperandAST::emitCST() const {
-    return "("s + left->emitCST() + " " + op_view + " " + right->emitCST() + ")";
+    return PUT_PT(left->emitCST() + " " + op_view + " " + right->emitCST(), this->has_pt);
 }
 
 void DoubleOperandAST::forceType(CstType type) {
@@ -672,6 +670,88 @@ sptr<AST> XorAST::parse(PARSER_FN_PARAM) {
     return nullptr;
 }
 
+// EqAST
+
+EqAST::EqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::EQ;
+    this->op_view          = "==";
+    this->const_folding_fn = {
+        {std::make_tuple("bool", "bool"), nlambda(String v1, String v2) {return (v1 == v2) ? "true"s : "false"s;
+}
+}
+}
+;
+}
+
+String EqAST::emitLL(int* locc, String inp) const {
+    return inp;
+}
+
+sptr<AST> EqAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mEqAST::parse\e[0m");
+    STANDARD_MATH_PARSE(lexer::Token::EQ, EqAST);
+    return nullptr;
+}
+
+// NeqAST
+
+NeqAST::NeqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::NEQ;
+    this->op_view          = "!=";
+    this->const_folding_fn = {
+        {std::make_tuple("bool", "bool"), nlambda(String v1, String v2) {return (v1 != v2) ? "true"s : "false"s;
+}
+}
+}
+;
+}
+
+String NeqAST::emitLL(int* locc, String inp) const {
+    return inp;
+}
+
+sptr<AST> NeqAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mNeqAST::parse\e[0m");
+    STANDARD_MATH_PARSE(lexer::Token::NEQ, EqAST);
+    return nullptr;
+}
+
+/*
+sptr<AST> GtAST::parse(PARSER_FN_PARAM) {
+    lexer::Token::Type tokentype = lexer::Token::GREATER;
+
+    if (tokens.size() < 1) { return nullptr; }
+    lexer::TokenStream::Match m = tokens.splitStack({tokentype});
+    if (m.found()) {
+        sptr<AST> left = math::parse(m.before(), local, sr, expected_type);
+        if (left == nullptr) {
+            parser::error("Expression expected",
+                          m.before(),
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m",
+                          111);
+            return share<AST>(new AST());
+        }
+
+        sptr<AST> right = math::parse(m.after(), local, sr, expected_type);
+        if (right == nullptr) {
+            parser::error("Expression expected",
+                          m.after(),
+                          "Expected espression of type \e[1m"s + expected_type + "\e[0m",
+                          111);
+            return share<AST>(new AST());
+        }
+        lexer::Token op = tokens[m];
+        if (op.type == tokentype) { return share<AST>(new GtAST(left, right, tokens)); }
+    }
+    return nullptr;
+}*/
+
 // NotAST
 
 NotAST::NotAST(sptr<AST> inner, lexer::TokenStream tokens) {
@@ -777,7 +857,10 @@ sptr<AST> math::parse_pt(PARSER_FN_PARAM) {
     if (tokens[0].type == lexer::Token::Type::OPEN) {
         if (tokens[-1].type == lexer::Token::Type::CLOSE) {
             DEBUG(2, "PT::parse");
-            return math::parse(tokens.slice(1, 1, tokens.size() - 1), local + 1, sr, expected_type);
+            auto a = math::parse(tokens.slice(1, 1, tokens.size() - 1), local + 1, sr, expected_type);
+            a->has_pt = true;
+            a->setTokens(tokens);
+            return a;
         }
     }
 
@@ -1006,11 +1089,12 @@ void NoWrapAST::forceType(CstType type) {
 sptr<AST> math::parse(lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type) {
     DEBUGT(2, "math::parse", &tokens);
     return parser::parseOneOf(tokens,
-                              {IntLiteralAST::parse, FloatLiteralAST::parse, BoolLiteralAST::parse,
-                               CharLiteralAST::parse, StringLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
+                              {parse_pt, IntLiteralAST::parse, FloatLiteralAST::parse, BoolLiteralAST::parse,
+                               CharLiteralAST::parse, StringLiteralAST::parse, NullLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
 
-                               AddAST::parse, MulAST::parse, PowAST::parse, LorAST::parse, LandAST::parse, NotAST::parse, NegAST::parse,
+                               NegAST::parse, LandAST::parse, LorAST::parse, XorAST::parse, AddAST::parse, MulAST::parse, PowAST::parse, NotAST::parse, NegAST::parse,
+                              AndAST::parse, OrAST::parse,
 
-                               NoWrapAST::parse, CastAST::parse, CheckAST::parse, FuncCallAST::parse, parse_pt},
+                               NoWrapAST::parse, CastAST::parse, CheckAST::parse, FuncCallAST::parse},
                               local, sr, expected_type);
 }

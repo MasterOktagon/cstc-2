@@ -17,6 +17,7 @@
 #define PARSER_FN_PARAM      lexer::TokenStream tokens, int local, symbol::Namespace *sr, String expected_type
 #define PARSER_FN_NO_DEFAULT fsignal<sptr<AST>, lexer::TokenStream, int, symbol::Namespace*, String>
 #define ERR                  share<AST>(new AST)
+#define PUT_PT(s, a) (a? "("s + s + ")" : s)
 
 /**
  * @class represents an AST node
@@ -37,10 +38,12 @@ class AST : public Repr {
         AST() = default;
         String value;            //> value, used for several purposes
         bool   is_const = false; //> whether this is const and should be tried to be substituted in.
+        bool   has_pt   = false; //> whether this AST has braces around it
 
         virtual ~AST() = default;
 
         lexer::TokenStream getTokens() const { return tokens; }
+        void setTokens(lexer::TokenStream tokens) { this->tokens = tokens;}
 
         /**
          * @brief get the LLVM IR type representation of this Nodes return type

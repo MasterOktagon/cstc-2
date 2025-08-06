@@ -106,3 +106,12 @@ void symbol::Namespace::LinearitySnapshot::traceback(LinearitySnapshot ls) const
     }
 }
 
+symbol::Function::Function(symbol::Reference* parent, String name, lexer::TokenStream tokens) {
+    this->tokens = tokens.tokens;
+    this->loc    = name;
+    this->parent = parent;
+
+    ALLOWS_NON_STATIC  = true;
+    ALLOWS_EXPRESSIONS = true;
+}
+

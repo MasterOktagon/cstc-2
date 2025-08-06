@@ -94,7 +94,7 @@ class VarSetAST : public ExpressionAST {
     virtual ~VarSetAST(){};
     virtual uint64 nodeSize() const {return expr->nodeSize() + 1;} // how many nodes to to do
     virtual String emitLL(int*, String) const;
-    virtual String emitCST() const {return "("s + name + " = " + expr->emitCST() + ")";}
+    virtual String emitCST() const {return PUT_PT(name + " = " + expr->emitCST(), this->has_pt);}
 
     virtual String getCstType() const {return var->getCstType();}
     virtual String getLLType() const {return "";}

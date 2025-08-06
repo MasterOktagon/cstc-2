@@ -110,5 +110,10 @@ namespace parser {
     extern Modifier getModifier(lexer::TokenStream& tokens);
 
     extern LLType LLType(CstType, symbol::Reference* sr = nullptr);
+
+    /**
+     * @brief check if an identifier is allowed as a name
+    */
+    extern void checkName(String name, lexer::Token where);
 } // namespace parser
 

@@ -145,7 +145,7 @@ Module::Module(String path, String dir, String module_name, bool is_stdlib, bool
     loc = "";
     for (uint64 i = 0; i<module_name.size(); i++){
         if (i < module_name.size()-2 && module_name[i] == ':' && module_name[i+1] == ':'){
-            loc += "..";
+            loc += "::";
             i++;
         }
         else {

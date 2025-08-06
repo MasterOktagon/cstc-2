@@ -298,3 +298,19 @@ void StringLiteralAST::forceType(String type) {
                       "Caused by");
     }
 }
+
+sptr<AST> NullLiteralAST::parse(PARSER_FN_PARAM) {
+    if (tokens.size() == 1 && tokens[0].type == lexer::Token::NULV) {
+        return share<AST>(new NullLiteralAST(tokens));
+    }
+    
+    return nullptr;
+}
+
+void NullLiteralAST::forceType(CstType type) {
+    DEBUG(4, "Trying \e[1mNullLiteralAST::parse\e[0m");
+    if (type[type.size() - 1] == '?') { this->type = type;
+    } else {
+        parser::error("\e[1m"s + type + "::operator null()\e[0m is not defined", tokens, "expected type " + type, 0);
+    }
+}
