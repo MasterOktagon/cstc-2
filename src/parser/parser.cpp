@@ -11,57 +11,69 @@
 #include <string>
 #include <vector>
 
-#define INT_OPS(type)                                        \
-    if (type1 == type) {                                     \
-        if (op == lexer::Token::Type::NOT) return "";        \
-        if (op == lexer::Token::Type::NEG) return type;      \
-        if (type2 == "bool") {                               \
-            if (op == lexer::Token::Type::AS) return "bool"; \
-        }                                                    \
-        if (std::regex_match(type2, int_regex)) {            \
-            if (op == lexer::Token::Type::AS) return type2;  \
-        }                                                    \
-        if (std::regex_match(type2, flt_regex)) {            \
-            if (op == lexer::Token::Type::AS) return type2;  \
-        }                                                    \
-        if (type2 == "char") {                               \
-            if (op == lexer::Token::Type::AS) return "char"; \
-        }                                                    \
-        if (type2 == type) {                                 \
-            if (op == lexer::Token::Type::AND) return type;  \
-            if (op == lexer::Token::Type::OR) return type;   \
-            if (op == lexer::Token::Type::XOR) return type;  \
-            if (op == lexer::Token::Type::ADD) return type;  \
-            if (op == lexer::Token::Type::SUB) return type;  \
-            if (op == lexer::Token::Type::MUL) return type;  \
-            if (op == lexer::Token::Type::DIV) return type;  \
-            if (op == lexer::Token::Type::MOD) return type;  \
-            if (op == lexer::Token::Type::POW) return type;  \
-        }                                                    \
+#define INT_OPS(type)                                             \
+    if (type1 == type) {                                          \
+        if (op == lexer::Token::Type::NOT) return "";             \
+        if (op == lexer::Token::Type::NEG) return type;           \
+        if (type2 == "bool") {                                    \
+            if (op == lexer::Token::Type::AS) return "bool";      \
+        }                                                         \
+        if (std::regex_match(type2, int_regex)) {                 \
+            if (op == lexer::Token::Type::AS) return type2;       \
+        }                                                         \
+        if (std::regex_match(type2, flt_regex)) {                 \
+            if (op == lexer::Token::Type::AS) return type2;       \
+        }                                                         \
+        if (type2 == "char") {                                    \
+            if (op == lexer::Token::Type::AS) return "char";      \
+        }                                                         \
+        if (type2 == type) {                                      \
+            if (op == lexer::Token::Type::AND) return type;       \
+            if (op == lexer::Token::Type::OR) return type;        \
+            if (op == lexer::Token::Type::XOR) return type;       \
+            if (op == lexer::Token::Type::ADD) return type;       \
+            if (op == lexer::Token::Type::SUB) return type;       \
+            if (op == lexer::Token::Type::MUL) return type;       \
+            if (op == lexer::Token::Type::DIV) return type;       \
+            if (op == lexer::Token::Type::MOD) return type;       \
+            if (op == lexer::Token::Type::POW) return type;       \
+            if (op == lexer::Token::Type::LESS) return "bool";    \
+            if (op == lexer::Token::Type::GREATER) return "bool"; \
+            if (op == lexer::Token::Type::GEQ) return "bool";     \
+            if (op == lexer::Token::Type::LEQ) return "bool";     \
+            if (op == lexer::Token::Type::EQ) return "bool";      \
+            if (op == lexer::Token::Type::NEQ) return "bool";     \
+        }                                                         \
     }
 
-#define FLT_OPS(type)                                        \
-    if (type1 == type) {                                     \
-        if (type2 == "bool") {                               \
-            if (op == lexer::Token::Type::AS) return "bool"; \
-        }                                                    \
-        if (std::regex_match(type2, int_regex)) {            \
-            if (op == lexer::Token::Type::AS) return type2;  \
-        }                                                    \
-        if (std::regex_match(type2, flt_regex)) {            \
-            if (op == lexer::Token::Type::AS) return type2;  \
-        }                                                    \
-        if (type2 == "char") {                               \
-            if (op == lexer::Token::Type::AS) return "char"; \
-        }                                                    \
-        if (type2 == type) {                                 \
-            if (op == lexer::Token::Type::ADD) return type;  \
-            if (op == lexer::Token::Type::SUB) return type;  \
-            if (op == lexer::Token::Type::MUL) return type;  \
-            if (op == lexer::Token::Type::DIV) return type;  \
-            if (op == lexer::Token::Type::MOD) return type;  \
-            if (op == lexer::Token::Type::POW) return type;  \
-        }                                                    \
+#define FLT_OPS(type)                                             \
+    if (type1 == type) {                                          \
+        if (type2 == "bool") {                                    \
+            if (op == lexer::Token::Type::AS) return "bool";      \
+        }                                                         \
+        if (std::regex_match(type2, int_regex)) {                 \
+            if (op == lexer::Token::Type::AS) return type2;       \
+        }                                                         \
+        if (std::regex_match(type2, flt_regex)) {                 \
+            if (op == lexer::Token::Type::AS) return type2;       \
+        }                                                         \
+        if (type2 == "char") {                                    \
+            if (op == lexer::Token::Type::AS) return "char";      \
+        }                                                         \
+        if (type2 == type) {                                      \
+            if (op == lexer::Token::Type::ADD) return type;       \
+            if (op == lexer::Token::Type::SUB) return type;       \
+            if (op == lexer::Token::Type::MUL) return type;       \
+            if (op == lexer::Token::Type::DIV) return type;       \
+            if (op == lexer::Token::Type::MOD) return type;       \
+            if (op == lexer::Token::Type::POW) return type;       \
+            if (op == lexer::Token::Type::LESS) return "bool";    \
+            if (op == lexer::Token::Type::GREATER) return "bool"; \
+            if (op == lexer::Token::Type::GEQ) return "bool";     \
+            if (op == lexer::Token::Type::LEQ) return "bool";     \
+            if (op == lexer::Token::Type::EQ) return "bool";      \
+            if (op == lexer::Token::Type::NEQ) return "bool";     \
+        }                                                         \
     }
 
 String parser::hasOp(String type1, String type2, lexer::Token::Type op) {

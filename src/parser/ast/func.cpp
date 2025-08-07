@@ -380,18 +380,24 @@ sptr<AST> FuncDefAST::parse(PARSER_FN_PARAM) {
 
         // TODO check for existing functions
 
-        symbol::Function* f = new symbol::Function(sr, name, tokens);
+        symbol::Function* f = new symbol::Function(sr, name, tokens, type->getCstType());
         sr->add(name, f);
         f->include.push_back(sr);
         for (auto p : parameters) {
-            sr->add(p.first, new symbol::Variable(p.first, p.second.second->getCstType(), p.second.first, f));
-            ((symbol::Variable*) ((*sr)[p.first][0]))->used = symbol::Variable::PROVIDED;
+            f->add(p.first, new symbol::Variable(p.first, p.second.second->getCstType(), p.second.first, f));
+            ((symbol::Variable*) ((*f)[p.first][0]))->used = symbol::Variable::PROVIDED;
+            ((symbol::Variable*) ((*f)[p.first][0]))->isFree = parser::isAtomic(p.second.second->getCstType());
             f->parameters.push_back(p.second.second->emitCST());
         }
         for (auto p : named_parameters) {
-            sr->add(p.first, new symbol::Variable(p.first, std::get<2>(p.second)->getCstType(), std::get<0>(p.second), f));
-            ((symbol::Variable*) ((*sr)[p.first][0]))->used = symbol::Variable::PROVIDED;
+            f->add(p.first, new symbol::Variable(p.first, std::get<2>(p.second)->getCstType(), std::get<0>(p.second), f));
+            ((symbol::Variable*) ((*f)[p.first][0]))->used = symbol::Variable::PROVIDED;
+            ((symbol::Variable*) ((*f)[p.first][0]))->isFree = parser::isAtomic(std::get<2>(p.second)->getCstType());
             f->name_parameters[p.first] = std::pair(std::get<2>(p.second)->emitCST(), std::get<1>(p.second));
+        }
+
+        if (!parser::isPascalCase(name)){
+            parser::warn("Wrong casing", {t[-1]}, "Function name should be pascalCase", 16);
         }
 
         sptr<AST> block_contents = SubBlockAST::parse(block.slice(0, 1, -1), local + 1, f);
@@ -405,12 +411,21 @@ sptr<AST> FuncDefAST::parse(PARSER_FN_PARAM) {
                     warn_error = parser::warn;
                     if (var->getVarName()[0] == '_'){continue;}
                 }
-                if (var->used == symbol::Variable::PROVIDED){
+                if (var->used == symbol::Variable::PROVIDED && !(var->isStatic)){
                     warn_error("Type linearity violated", var->last, "This variable was provided, but never consumed." + (var->isFree ? "\nIf this was intended, prefix it with an '_'."s : ""s), 0, "");
+                }
+                if (var->used == symbol::Variable::CONSUMED && var->isStatic && !var->isFree){
+                    warn_error("Type linearity violated", var->last, "This static variable was consumed, but never provided.", 0, "");
                 }
                 if (var->used == symbol::Variable::UNINITIALIZED){
                     parser::warn("Unused Variable", var->tokens, "This variable was declared, but never used" + (var->isFree ? "\nIf this was intended, prefix it with an '_'."s : ""s), 0);
                 }
+            }
+        }
+
+        if (!cast2(block_contents, SubBlockAST)->has_returned){
+            if (type->getCstType() != "void"){
+                parser::error("Unreturned function", tokens, "This function does not return in all cases", 0);
             }
         }
 

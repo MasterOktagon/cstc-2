@@ -6,73 +6,111 @@
 // layouts the flow ASTs
 //
 
-#include "ast.hpp"
-#include <vector>
 #include "../symboltable.hpp"
+#include "ast.hpp"
 
+#include <vector>
 
 class SubBlockAST : public AST {
     protected:
-    String _str() const;
+        String _str() const;
 
     public:
-    std::vector<sptr<AST>> contents = {}; //> block comments
-    symbol::Namespace* parent = nullptr;
+        std::vector<sptr<AST>> contents = {}; //> block comments
+        symbol::Namespace*     parent   = nullptr;
+        bool                   has_returned = false;
 
-    SubBlockAST(){}
-    virtual ~SubBlockAST() {}
+        SubBlockAST(bool has_returned) {
+            this->has_returned = has_returned;
+        }
 
-    // fwd declarations @see @class AST
+        virtual ~SubBlockAST() {}
 
-    virtual bool isConst(){return false;}
-    virtual String emitLL(int* locc, String inp) const;
+        // fwd declarations @see @class AST
 
-    virtual String emitCST() const;
-    
-    virtual CstType getCstType() const {return "void";}
-    virtual LLType  getLLTtype() const { return ""; }
-    virtual uint64 nodeSize() const { return contents.size();};
-    virtual void forceType(CstType){}
+        virtual bool isConst() { return false; }
 
-    /**
-     * @brief parse a Subblock
-     */
-    static sptr<AST> parse(PARSER_FN);
+        virtual String emitLL(int* locc, String inp) const;
+
+        virtual String emitCST() const;
+
+        virtual CstType getCstType() const { return "void"; }
+
+        virtual LLType getLLTtype() const { return ""; }
+
+        virtual uint64 nodeSize() const { return contents.size(); };
+
+        virtual void forceType(CstType) {}
+
+        /**
+         * @brief parse a Subblock
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
 class IfAST : public AST {
     public:
-    sptr<SubBlockAST> block;
-    sptr<AST> cond;
+        sptr<SubBlockAST> block;
+        sptr<AST>         cond;
+        symbol::Namespace* sb;
 
-    IfAST(sptr<SubBlockAST> block, sptr<AST> cond, lexer::TokenStream t){tokens = t; this->block=block; this->cond = cond;}
-    virtual ~IfAST() {}
+        IfAST(sptr<SubBlockAST> block, sptr<AST> cond, lexer::TokenStream t, symbol::Namespace* sb) {
+            tokens      = t;
+            this->block = block;
+            this->cond  = cond;
+            this->sb    = sb;
+        }
 
-    // fwd declarations @see @class AST
+        virtual ~IfAST() {delete sb;}
 
-    virtual bool isConst(){return false;}
-    //virtual String emitLL(int* locc, String inp) const;
+        // fwd declarations @see @class AST
 
-    virtual String emitCST() const {return "if "s + cond->emitCST() + " {\n" + intab(block->emitCST()) + "\n}\n";};
-    
-    virtual CstType getCstType() const {return "void";}
-    virtual LLType  getLLTtype() const { return ""; }
-    virtual uint64 nodeSize() const { return block->contents.size()+1;};
-    virtual void forceType(CstType){}
+        virtual bool isConst() { return false; }
 
-    /**
-     * @brief parse a Subblock
-     */
-    static sptr<AST> parse(PARSER_FN);
+        // virtual String emitLL(int* locc, String inp) const;
 
+        virtual String emitCST() const {
+            return "if "s + cond->emitCST() + " {\n" + intab(block->emitCST()) + "\n}\n";
+        };
+
+        virtual CstType getCstType() const { return "void"; }
+
+        virtual LLType getLLTtype() const { return ""; }
+
+        virtual uint64 nodeSize() const { return block->contents.size() + 1; };
+
+        virtual void forceType(CstType) {}
+
+        /**
+         * @brief parse a Subblock
+         */
+        static sptr<AST> parse(PARSER_FN);
 };
 
+class ReturnAST : public AST {
+    public:
+        sptr<AST> expr;
+        CstType   type = "";
 
+        ReturnAST(sptr<AST> expr, lexer::TokenStream tokens) {
+            this->expr   = expr;
+            this->tokens = tokens;
+        }
 
+        virtual ~ReturnAST() {}
 
+        virtual bool isConst() { return false; }
 
+        virtual String emitCST() const { return "return "s + expr->emitCST() + ";"; };
 
+        virtual CstType getCstType() const { return "void"; }
 
+        virtual uint64 nodeSize() const { return expr->nodeSize() + 1; };
 
+        virtual void forceType(CstType) {}
 
-
+        /**
+         * @brief parse a Subblock
+         */
+        static sptr<AST> parse(PARSER_FN);
+};

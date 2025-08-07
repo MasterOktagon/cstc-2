@@ -752,6 +752,88 @@ sptr<AST> GtAST::parse(PARSER_FN_PARAM) {
     return nullptr;
 }*/
 
+
+// GtAST
+GtAST::GtAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::GREATER;
+    this->op_view          = ">";
+    this->const_folding_fn = {};
+}
+
+String GtAST::emitLL(int* locc, String inp) const {
+    return inp;
+}
+
+sptr<AST> GtAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mNeqAST::parse\e[0m");
+    STANDARD_MATH_PARSE(lexer::Token::GREATER, GtAST);
+    return nullptr;
+}
+
+// LtAST
+LtAST::LtAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::LESS;
+    this->op_view          = "<";
+    this->const_folding_fn = {};
+}
+
+String LtAST::emitLL(int* locc, String inp) const {
+    return inp;
+}
+
+sptr<AST> LtAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mNeqAST::parse\e[0m");
+    STANDARD_MATH_PARSE(lexer::Token::LESS, LtAST);
+    return nullptr;
+}
+
+// GeqAST
+GeqAST::GeqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::GEQ;
+    this->op_view          = ">=";
+    this->const_folding_fn = {};
+}
+
+String GeqAST::emitLL(int* locc, String inp) const {
+    return inp;
+}
+
+sptr<AST> GeqAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mNeqAST::parse\e[0m");
+    STANDARD_MATH_PARSE(lexer::Token::GEQ, GeqAST);
+    return nullptr;
+}
+
+// LeqAST
+LeqAST::LeqAST(sptr<AST> left, sptr<AST> right, lexer::TokenStream tokens) {
+    this->left             = left;
+    this->right            = right;
+    this->tokens           = tokens;
+    this->op               = lexer::Token::LEQ;
+    this->op_view          = "<=";
+    this->const_folding_fn = {};
+}
+
+String LeqAST::emitLL(int* locc, String inp) const {
+    return inp;
+}
+
+sptr<AST> LeqAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mNeqAST::parse\e[0m");
+    STANDARD_MATH_PARSE(lexer::Token::LEQ, LeqAST);
+    return nullptr;
+}
+
+
 // NotAST
 
 NotAST::NotAST(sptr<AST> inner, lexer::TokenStream tokens) {
@@ -1092,8 +1174,8 @@ sptr<AST> math::parse(lexer::TokenStream tokens, int local, symbol::Namespace* s
                               {parse_pt, IntLiteralAST::parse, FloatLiteralAST::parse, BoolLiteralAST::parse,
                                CharLiteralAST::parse, StringLiteralAST::parse, EmptyLiteralAST::parse, NullLiteralAST::parse, ArrayLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
 
-                               NegAST::parse, LandAST::parse, LorAST::parse, XorAST::parse, AddAST::parse, MulAST::parse, PowAST::parse, NotAST::parse, NegAST::parse,
-                              AndAST::parse, OrAST::parse,
+                               NegAST::parse, LandAST::parse, LorAST::parse, EqAST::parse, NeqAST::parse, GeqAST::parse,LeqAST::parse, GtAST::parse, LtAST::parse, AddAST::parse, MulAST::parse, PowAST::parse, NotAST::parse, NegAST::parse,
+                              AndAST::parse, OrAST::parse, XorAST::parse,
 
                                NoWrapAST::parse, CastAST::parse, CheckAST::parse,ArrayLengthAST::parse, FuncCallAST::parse},
                               local, sr, expected_type);

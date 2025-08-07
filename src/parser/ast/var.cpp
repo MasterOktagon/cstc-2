@@ -184,12 +184,12 @@ sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
             //     parser::error("Unknown type", {tokens[0], tokens[tokens.size()-3]}, "A type of this name is unknown
             //     in this scope", 19); return new AST;
             // }
-            if ((*sr)[name].size() > 0) {
+            if (sr->getLocal(name).size() > 0) {
                 parser::error("Variable already defined",
-                              {tokens[tokens.size() - 2]},
+                              {tokens[(int64)split-1]},
                               "A variable of this name is already defined in this scope",
                               25);
-                parser::note((*sr)[name][0]->tokens, "defined here:", 0);
+                parser::note(sr->getLocal(name)[0]->tokens, "defined here:", 0);
                 return share<AST>(new AST);
             }
             if (parser::isAtomic(name)) {

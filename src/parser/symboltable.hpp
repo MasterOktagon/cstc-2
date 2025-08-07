@@ -28,6 +28,8 @@ namespace symbol {
 
             virtual ~Reference();
 
+            virtual String getReturnType() const {return "@unknown";}
+
             virtual LLType getLLType() { return "void"s; }
 
             virtual CstType getCstType() { return "void"s; }
@@ -132,11 +134,11 @@ namespace symbol {
             bool ALLOWS_INIT_CONST  = false;
             bool ALLOWS_CONST       = false;
             bool ALLOWS_STATIC      = true;
-            bool ALLOWS_FINAL       = false;
             bool ALLOWS_ENUMS       = false;
             bool ALLOWS_NON_STATIC  = false;
-            
+
             virtual std::vector<symbol::Reference*> operator[](String subloc);
+            virtual std::vector<symbol::Reference*> getLocal(String subloc);
 
             const String getName() const { return "Namespace"; }
 
@@ -168,6 +170,34 @@ namespace symbol {
             LinearitySnapshot snapshot() const;
     };
 
+    class SubBlock : public Namespace {
+            String name;
+        public:
+            SubBlock(symbol::Namespace* copyFrom) {
+                ALLOWS_VAR_DECL    = copyFrom->ALLOWS_VAR_DECL;
+                ALLOWS_VAR_SET     = copyFrom->ALLOWS_VAR_SET;
+                ALLOWS_VISIBILITY  = copyFrom->ALLOWS_VISIBILITY;
+                ALLOWS_VIRTUAL     = copyFrom->ALLOWS_VIRTUAL;
+                ALLOWS_EXPRESSIONS = copyFrom->ALLOWS_EXPRESSIONS;
+                ALLOWS_FUNCTIONS   = copyFrom->ALLOWS_FUNCTIONS;
+                ALLOWS_SUBBLOCKS   = copyFrom->ALLOWS_SUBBLOCKS;
+                ALLOWS_SUBCLASSES  = copyFrom->ALLOWS_SUBCLASSES;
+                ALLOWS_INIT        = copyFrom->ALLOWS_INIT;
+                ALLOWS_INIT_CONST  = copyFrom->ALLOWS_INIT_CONST;
+                ALLOWS_CONST       = copyFrom->ALLOWS_CONST;
+                ALLOWS_STATIC      = copyFrom->ALLOWS_STATIC;
+                ALLOWS_ENUMS       = copyFrom->ALLOWS_ENUMS;
+                ALLOWS_NON_STATIC  = copyFrom->ALLOWS_NON_STATIC;
+
+                name = copyFrom->getName();
+                parent = copyFrom;
+            }
+
+            const String getName() const { return name; };
+
+            CstType getReturnType() const {return parent->getReturnType();}
+    };
+
     class Function : public Namespace {
             /**
              * Reference that represents a function
@@ -184,7 +214,7 @@ namespace symbol {
             std::map<String, std::pair<CstType, sptr<AST>>> name_parameters;
             bool                 is_method = false;
 
-            Function(symbol::Reference* parent, String name, lexer::TokenStream tokens);
+            Function(symbol::Reference* parent, String name, lexer::TokenStream tokens, CstType type);
 
             LLType getLLType() { return "void"s; }
 
@@ -229,7 +259,6 @@ namespace symbol {
                 ALLOWS_INIT_CONST = true;
                 ALLOWS_VAR_DECL   = true;
                 ALLOWS_STATIC     = true;
-                ALLOWS_FINAL      = true;
             }
 
             size sizeBytes() {

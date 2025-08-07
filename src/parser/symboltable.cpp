@@ -42,6 +42,12 @@ symbol::Namespace::~Namespace() {
 }
 
 std::vector<symbol::Reference*> symbol::Namespace::operator[](String subloc) {
+    auto result = getLocal(subloc);
+    for (uint64 i = 0; result.size() == 0 && i < include.size(); i++) { result = (*include.at(i))[subloc]; }
+    return result;
+}
+
+std::vector<symbol::Reference*> symbol::Namespace::getLocal(String subloc) {
     if (subloc == "") { return {this}; }
     if (contents.count(subloc) > 0) { return contents[subloc]; }
 
@@ -60,7 +66,6 @@ std::vector<symbol::Reference*> symbol::Namespace::operator[](String subloc) {
         }
     }
     if (result.size() == 0 && import_from.count(subloc) > 0) { result = (*this)[import_from[subloc]]; }
-    for (uint64 i = 0; result.size() == 0 && i < include.size(); i++) { result = (*include.at(i))[subloc]; }
     return result;
 }
 
@@ -106,10 +111,11 @@ void symbol::Namespace::LinearitySnapshot::traceback(LinearitySnapshot ls) const
     }
 }
 
-symbol::Function::Function(symbol::Reference* parent, String name, lexer::TokenStream tokens) {
+symbol::Function::Function(symbol::Reference* parent, String name, lexer::TokenStream tokens, CstType type) {
     this->tokens = tokens.tokens;
     this->loc    = name;
     this->parent = parent;
+    this->type   = type;
 
     ALLOWS_NON_STATIC  = true;
     ALLOWS_EXPRESSIONS = true;

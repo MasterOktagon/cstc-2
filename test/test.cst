@@ -1,22 +1,7 @@
 
+
 void main(int8 l) {
-    mut uint8 a;
-    a = 2 * 1;
-    uint8[] hi = [1,2,3];
-    String s = "Hallo";
-    static uint8 b = 2**3 * 4 - 2;
-    const uint8 c = uint8::MAX_VALUE;
-    a = nowrap( c + 1 );
-
-    static float32 _e = 3.1 + 2.1;
-
-    static mut uint8? f = l as uint8?;
-    //f = 1 as uint8?;
-    if true || false {
-        a = f?;
-        f = 1 as uint8?;
-    }
-    delete s, f, hi;
+    uint8 a = 5;
 }
 
 

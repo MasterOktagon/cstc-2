@@ -328,7 +328,6 @@ class NeqAST : public DoubleOperandAST {
          */
         static sptr<AST> parse(PARSER_FN);
 };
-#if 0
 /**
  * @class that represents a '>=' operation
  */
@@ -408,7 +407,7 @@ class LtAST : public DoubleOperandAST {
          */
         static sptr<AST> parse(PARSER_FN);
 };
-#endif
+
 /**
  * @class that represents a '!' operation
  */
