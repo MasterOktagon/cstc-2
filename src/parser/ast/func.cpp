@@ -9,6 +9,7 @@
 #include "ast.hpp"
 #include "base_math.hpp"
 #include "flow.hpp"
+#include "literal.hpp"
 #include "type.hpp"
 #include "var.hpp"
 
@@ -193,6 +194,50 @@ String FuncCallAST::emitCST() const {
     return s;
 }
 
+void FuncCallAST::forceType(CstType type) {
+    if (!parser::typeEq(type, fn->getReturnType())) {
+        parser::error("Type mismatch", tokens, "expected a \e1[1m"s + type + "\e[0m, but "s + (fn->is_method ? "method"s : "function"s) + " returns " + fn->getReturnType(),17);
+    }
+}
+
+sptr<AST> ArrayLengthAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mArrayLengthAST::parse\e[0m");
+    if (tokens.size() < 3) { return nullptr; }
+    lexer::TokenStream::Match m = tokens.rsplitStack({lexer::Token::ACCESS});
+    if (m.found()) {
+        lexer::TokenStream after = m.after();
+        if (after.size() != 3) { return nullptr; }
+        if (after[0].type != lexer::Token::ID || after[0].value != "len") { return nullptr; }
+        if (after[1].type != lexer::Token::OPEN || after[2].type != lexer::Token::CLOSE) { return nullptr; }
+        sptr<AST> from = math::parse(m.before(), local, sr);
+        if (from == nullptr) { return nullptr; }
+        if (from->getCstType().size() > 1 && from->getCstType().substr(from->getCstType().size()-2) == "[]"){
+
+            return share<AST>(new ArrayLengthAST(from, tokens.slice(m, 1, tokens.size())));
+        }
+    }
+    return nullptr;
+}
+
+void ArrayLengthAST::forceType(CstType type) {
+    from->forceType("@unknown[]");
+    if (!parser::typeEq(type, "usize")) {
+        parser::error("Type mismatch", tokens, "expected a \e[1m"s + type + "\e[0m, but method returns usize",17);
+    }
+}
+
+bool ArrayLengthAST::isConst() {
+    if ( instanceOf(from, EmptyLiteralAST)){
+        is_const=true;
+        value = "0";
+        return true;
+    }
+    if (from->is_const) {
+        value = cast2(from, ArrayLiteralAST)->const_len;
+    }
+    return from->is_const;
+}
+
 sptr<AST> FuncDefAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mFuncDefAST::parse\e[0m");
     if (tokens.size() < 3) { return nullptr; }
@@ -350,6 +395,24 @@ sptr<AST> FuncDefAST::parse(PARSER_FN_PARAM) {
         }
 
         sptr<AST> block_contents = SubBlockAST::parse(block.slice(0, 1, -1), local + 1, f);
+
+        // check variables for usage
+        for (std::pair<String, std::vector<symbol::Reference*>> sr : f->contents){
+            if (sr.second.at(0) == dynamic_cast<symbol::Variable*>(sr.second.at(0))){
+                auto var = (symbol::Variable*)sr.second.at(0);
+                fsignal<void, String, std::vector<lexer::Token>, String, uint32, String> warn_error = parser::error;
+                if (var->isFree){
+                    warn_error = parser::warn;
+                    if (var->getVarName()[0] == '_'){continue;}
+                }
+                if (var->used == symbol::Variable::PROVIDED){
+                    warn_error("Type linearity violated", var->last, "This variable was provided, but never consumed." + (var->isFree ? "\nIf this was intended, prefix it with an '_'."s : ""s), 0, "");
+                }
+                if (var->used == symbol::Variable::UNINITIALIZED){
+                    parser::warn("Unused Variable", var->tokens, "This variable was declared, but never used" + (var->isFree ? "\nIf this was intended, prefix it with an '_'."s : ""s), 0);
+                }
+            }
+        }
 
         return share<AST>(new FuncDefAST(name,
         cast2(type, TypeAST) , parameters, f, cast2(block_contents, SubBlockAST)));

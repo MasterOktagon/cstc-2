@@ -34,24 +34,48 @@ class FuncCallAST : public ExpressionAST {
 
         virtual LLType getLLType() const { return ""; }
 
-        virtual void forceType(String) {}
+        virtual void forceType(CstType);
+
+        static sptr<AST> parse(PARSER_FN);
+};
+
+class ArrayLengthAST : public ExpressionAST {
+        sptr<AST> from;
+
+    public:
+        ArrayLengthAST(sptr<AST> from, lexer::TokenStream tokens) {
+            this->from   = from;
+            this->tokens = tokens;
+        }
+
+        virtual ~ArrayLengthAST(){};
+        virtual String emitCST() const {return from->emitCST() + ".len()";};
+
+        virtual CstType getCstType() const { return "usize"; }
+
+        virtual String emitLL(int* locc, std::string inp) const { return inp; }
+
+        virtual LLType getLLType() const { return ""; }
+
+        virtual void forceType(CstType);
+        virtual bool isConst();
 
         static sptr<AST> parse(PARSER_FN);
 };
 
 class FuncDefAST : public AST {
-        String                 name;
-        symbol::Function*      fn       = nullptr;
-        sptr<SubBlockAST>      contents = nullptr;
+        String                                                            name;
+        symbol::Function*                                                 fn       = nullptr;
+        sptr<SubBlockAST>                                                 contents = nullptr;
         std::map<String, std::pair<std::vector<lexer::Token>, sptr<AST>>> params;
-        sptr<TypeAST>          return_type = nullptr;
+        sptr<TypeAST>                                                     return_type = nullptr;
 
     public:
-        FuncDefAST(std::string            name,
-                   sptr<TypeAST>          return_type,
+        FuncDefAST(std::string                                                       name,
+                   sptr<TypeAST>                                                     return_type,
                    std::map<String, std::pair<std::vector<lexer::Token>, sptr<AST>>> params,
-                   symbol::Function*      f,
-                   sptr<SubBlockAST>      block) {
+                   symbol::Function*                                                 f,
+                   sptr<SubBlockAST>                                                 block) {
             this->contents    = block;
             this->name        = name;
             this->params      = params;
@@ -66,13 +90,13 @@ class FuncDefAST : public AST {
         virtual String emitLL(int* locc, std::string inp) const { return inp; };
 
         virtual String emitCST() const {
-            String r = return_type->emitCST() + " " + name + " (";
-            bool has_param = false;
+            String r         = return_type->emitCST() + " " + name + " (";
+            bool   has_param = false;
             for (auto p : params) {
-                r += p.second.second->emitCST() + " " + p.first + ",";
-                has_param = true;
+                r         += p.second.second->emitCST() + " " + p.first + ",";
+                has_param  = true;
             }
-            if (has_param) r += "\b";
+            if (has_param) { r += "\b"; }
             r += "){\n" + intab(contents->emitCST()) + "\n}";
             return r;
         }

@@ -1,25 +1,27 @@
-#include <memory>
-#include <string>
 #include "flow.hpp"
+
+#include "../../debug/debug.hpp"
+#include "../../lexer/lexer.hpp"
+#include "../errors.hpp"
+#include "../parser.hpp"
+#include "../symboltable.hpp"
 #include "ast.hpp"
 #include "base_math.hpp"
-#include <vector>
-#include "../../lexer/lexer.hpp"
-#include "../symboltable.hpp"
-#include "../../debug/debug.hpp"
-#include "../parser.hpp"
 #include "func.hpp"
 #include "import.hpp"
 #include "namespace.hpp"
 #include "struct.hpp"
 #include "var.hpp"
-#include "../errors.hpp"
+
+#include <memory>
+#include <string>
+#include <vector>
 
 String SubBlockAST::emitCST() const {
     String ret = "";
     for (sptr<AST> a : contents) {
         ret += a->emitCST();
-        if (instanceOf(a, ExpressionAST)){
+        if ( instanceOf(a, ExpressionAST)){
             ret += ";"; // Expressions don't End on semicolons, therefore add one
         }
         ret += "\n";
@@ -62,6 +64,7 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
                 buffer, {
                             NamespaceAST::parse, VarInitlAST::parse,
                             VarDeclAST::parse, parseStatement, EnumAST::parse, IfAST::parse, FuncDefAST::parse,
+                            DeleteAST::parse,
                             ImportAST::parse
                         }, local, sr, "void");
 
@@ -71,12 +74,22 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
             else {
                 if(instanceOf(expr, ExpressionAST) && !sr->ALLOWS_EXPRESSIONS){
                     parser::error("Expression forbidden", expr->getTokens(), "A Block of type "s + sr->getName() + " does not allow Expressions", 0);
-                } 
+                }
+                else if (instanceOf(expr, ExpressionAST) && !instanceOf(expr, VarSetAST) && expr->getCstType() != "void"){
+                    if (parser::isAtomic(expr->getCstType())){
+                        if (!instanceOf(expr, FuncCallAST)){
+                            parser::warn("Unused output", expr->getTokens(), "The return type from this expression was discarded.", 0);
+                        }
+                    } else {
+                        parser::error("Type linearity violated", expr->getTokens(), "The (non-atomic) return type from this expression was discarded.", 0);
+                    }
+                }
                 contents.push_back(expr);
             }
         }
         tokens = split.after();
     }
+
     auto b = share<SubBlockAST>(new SubBlockAST());
     b->contents = contents;
     return b;

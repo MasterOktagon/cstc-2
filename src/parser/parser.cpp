@@ -92,13 +92,13 @@ String parser::hasOp(String type1, String type2, lexer::Token::Type op) {
     INT_OPS("uint16");
     INT_OPS("uint32");
     INT_OPS("uint64");
-    INT_OPS("uint128");
+    INT_OPS("usize");
 
     INT_OPS("int8");
     INT_OPS("int16");
     INT_OPS("int32");
     INT_OPS("int64");
-    INT_OPS("int128");
+    INT_OPS("ssize");
 
     FLT_OPS("float16");
     FLT_OPS("float32");
@@ -145,22 +145,21 @@ bool parser::typeEq(String a, String b) {
     if (a == b) { return true; }
     if (a == "@int") {
         return (b == "int8" || b == "int16" || b == "int32" || b == "int64" || b == "int128" || b == "int256" ||
-                b == "int512" || b == "int1024" || b == "uint8" || b == "uint16" || b == "uint32" || b == "uint64" ||
-                b == "uint128" || b == "uint256" || b == "uint512" || b == "uint1024" || b == "@uint");
+                b == "int512" || b == "int1024" || b == "uint8" || b == "uint16" || b == "uint32" || b == "uint64" || a == "ssize" || b == "usize" || b == "@uint");
     }
     if (a == "@float") { return b == "float32" || b == "float64"; }
     if (b == "@int") {
         return (a == "int8" || a == "int16" || a == "int32" || a == "int64" || a == "int128" || a == "int256" ||
                 a == "int512" || a == "int1024" || a == "uint8" || a == "uint16" || a == "uint32" || a == "uint64" ||
-                a == "uint128" || a == "uint256" || a == "uint512" || a == "uint1024" || a == "@uint");
+                a == "usize" || a == "ssize"|| a == "@uint");
     }
     if (a == "@uint") {
         return b == "uint8" || b == "uint16" || b == "uint32" || b == "uint64" || b == "uint128" || b == "uint256" ||
-               b == "uint512" || b == "uint1024" || b == "@int";
+               b == "uint512" || b == "uint1024" || b == "@uint" || a == "usize";
     }
     if (b == "@uint") {
         return a == "uint8" || a == "uint16" || a == "uint32" || a == "uint64" || a == "uint128" || a == "uint256" ||
-               a == "uint512" || a == "uint1024" || a == "@int";
+               a == "uint512" || a == "uint1024" || a == "@uint" || a == "usize";
     }
     if (b == "@float") { return a == "float32" || a == "float64"; }
 
@@ -172,13 +171,13 @@ bool parser::isAtomic(String type) {
     if (type == "uint16") { return true; }
     if (type == "uint32") { return true; }
     if (type == "uint64") { return true; }
-    if (type == "uint128") { return true; }
+    if (type == "usize") { return true; }
 
     if (type == "int8") { return true; }
     if (type == "int16") { return true; }
     if (type == "int32") { return true; }
     if (type == "int64") { return true; }
-    if (type == "int128") { return true; }
+    if (type == "ssize") { return true; }
 
     if (type == "char") { return true; }
     if (type == "float16") { return true; }

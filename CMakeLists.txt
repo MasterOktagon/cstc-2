@@ -4,8 +4,6 @@ project( cstc-cpp )
 
 set(ExecutableName "cstc")
 
-set (CMAKE_CXX_STANDARD 17)
-
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -53,6 +51,7 @@ if (${Catch2_FOUND})
     # for tests no main file
     list(REMOVE_ITEM SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
     add_executable(${TestName} ${SRC})
+    add_compile_options(-DCATCH2)
     target_link_libraries(${TestName} PRIVATE Catch2::Catch2WithMain)
 
     # run tests

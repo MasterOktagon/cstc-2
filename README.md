@@ -1,6 +1,21 @@
 
 # CSTC - the Cst-Compiler
 
+C* - or Cst - is a spriritual successor to C++ that forces memory safety and good coding style without compromising speed to much
+
+`main.cst`:
+```c++
+import std::io : { print, println };
+
+void main() {
+    std::io::println("Hello World!");
+}
+```
+
+```bash
+$ cstc main.cst
+```
+
 ## Installation
 
 - have a linux distro (I am relatively sure that windows should not work)

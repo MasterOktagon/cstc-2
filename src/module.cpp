@@ -391,34 +391,7 @@ void Module::parse(){
         std::cout << root->emitCST() << std::endl;
 
         delete i;
-
-        for (sptr<AST> a : std::dynamic_pointer_cast<SubBlockAST>(root)->contents) {
-            if (instanceOf(a, FuncCallAST)) {
-                auto r = std::dynamic_pointer_cast<FuncCallAST>(a);
-                fsignal<void, String, std::vector<lexer::Token>, String, uint32, String> warn_error = parser::error;
-                if (r->getCstType() == "void") continue;
-                if (parser::isAtomic(r->getCstType())) {
-                    warn_error = parser::warn;
-                }
-                warn_error("Type linearity violated",r->getTokens().tokens,"return values of this function are discarded",0,"");
-            }
-        }
     }
-    // check variables for usage
-    for (std::pair<String, std::vector<symbol::Reference*>> sr : contents){
-        if (sr.second.at(0) == dynamic_cast<symbol::Variable*>(sr.second.at(0))){
-            auto var = (symbol::Variable*)sr.second.at(0);
-            // if (parser::isAtomic(var->getCstType())) continue;
-            if (var->getVarName()[0] == '_') continue;
-            if (var->used == symbol::Variable::PROVIDED){
-                parser::warn("Unconsumed Variable", var->last, "This variable was provided, but never consumed.\nIf this was intended, prefix it with an '_'.", 0);
-            }
-            if (var->used == symbol::Variable::UNINITIALIZED){
-                parser::warn("Unused Variable", var->tokens, "This variable was declared, but never used.\nIf this was intended, prefix it with an '_'.", 0);
-            }
-        }
-    }
-
     std::cout << "\rParsing modules (" << ++parsed_modules << "/" << Module::modules.size() << ")";
 }
 

@@ -1,20 +1,20 @@
 #include "var.hpp"
-//#include "../../lexer/lexer.hpp"
+// #include "../../lexer/lexer.hpp"
+#include "../../build/optimizer_flags.hpp"
+#include "../../debug/debug.hpp"
 #include "../errors.hpp"
 #include "../parser.hpp"
 #include "../symboltable.hpp"
 #include "ast.hpp"
-#include "../../build/optimizer_flags.hpp"
 #include "base_math.hpp"
 #include "literal.hpp"
 #include "type.hpp"
-#include "../../debug/debug.hpp"
+
 #include <string>
 #include <vector>
 
 String parse_name(lexer::TokenStream tokens) {
-    if (tokens.size() == 0)
-        return "";
+    if (tokens.size() == 0) { return ""; }
     String             name = "";
     lexer::Token::Type last = lexer::Token::Type::SUBNS;
 
@@ -27,8 +27,9 @@ String parse_name(lexer::TokenStream tokens) {
             name += t.value;
         } else if (last == lexer::Token::Type::ID && t.type == lexer::Token::Type::SUBNS) {
             name += "::";
-        } else
+        } else {
             return "";
+        }
         last = t.type;
     }
     if (last == lexer::Token::Type::SUBNS) {
@@ -39,8 +40,7 @@ String parse_name(lexer::TokenStream tokens) {
 }
 
 sptr<AST> parseStatement(lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type) {
-    if (tokens.size() == 0 || tokens[tokens.size() - 1].type != lexer::Token::Type::END_CMD)
-        return nullptr;
+    if (tokens.size() == 0 || tokens[tokens.size() - 1].type != lexer::Token::Type::END_CMD) { return nullptr; }
     return math::parse(tokens.slice(0, 1, tokens.size() - 1), local, sr, expected_type);
 }
 
@@ -56,8 +56,7 @@ String VarDeclAST::_str() const {
 
 sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mVarDeclAST::parse\e[0m");
-    if (tokens.size() < 3)
-        return nullptr;
+    if (tokens.size() < 3) { return nullptr; }
     if (tokens[tokens.size() - 1].type == lexer::Token::Type::END_CMD) {
         auto             tokens2 = tokens;
         String           name    = "";
@@ -71,56 +70,65 @@ sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
                 //     unknown in this scope", 19); return new AST;
                 // }
                 if ((*sr)[name].size() > 0) {
-                    parser::error("Variable already defined", {tokens[tokens.size() - 2]},
-                                  "A variable of this name is already defined in this scope", 25);
+                    parser::error("Variable already defined",
+                                  {tokens[tokens.size() - 2]},
+                                  "A variable of this name is already defined in this scope",
+                                  25);
                     parser::note((*sr)[name][0]->tokens, "defined here:", 0);
                     return ERR;
                 }
                 if (parser::isAtomic(name)) {
-                    parser::error(
-                        "Unsupported name", {tokens[tokens.size() - 2]},
-                        "The name "s + name + " refers to a scope or type and cannot be used as a variable name", 25);
+                    parser::error("Unsupported name",
+                                  {tokens[tokens.size() - 2]},
+                                  "The name "s + name +
+                                      " refers to a scope or type and cannot be used as a variable name",
+                                  25);
                     return ERR;
                 }
                 if (!parser::is_snake_case(name) && !(m & parser::Modifier::CONST)) {
                     parser::warn("Wrong casing", {tokens[tokens.size() - 2]}, "Variable name should be snake_case", 16);
                 }
                 if (m & parser::Modifier::CONST) {
-                    parser::error("const declaration without initialization", tokens2,
-                                  "A variable can only be const if an initialization is given", 25);
+                    parser::error("const declaration without initialization",
+                                  tokens2,
+                                  "A variable can only be const if an initialization is given",
+                                  25);
                     parser::note(tokens2, "remove the 'const' keyword to resolve this easily", 0);
                     return ERR;
 
                     if (m & parser::Modifier::STATIC) {
-                        parser::warn(
-                            "Variable declared as constant and static", tokens2,
-                            "declaring a constant static is ambigous",
-                            0);
+                        parser::warn("Variable declared as constant and static",
+                                     tokens2,
+                                     "declaring a constant static is ambigous",
+                                     0);
                     }
-                }
-                else if (!(m & parser::Modifier::MUTABLE)) {
-                    parser::error("immutable declaration without initialization", tokens2,
-                                  "A variable can only be immutable if an initialization is given", 25);
+                } else if (!(m & parser::Modifier::MUTABLE)) {
+                    parser::error("immutable declaration without initialization",
+                                  tokens2,
+                                  "A variable can only be immutable if an initialization is given",
+                                  25);
                     parser::noteInsert("Make this variable mutable if required", tokens2[0], "mut ", 0, true);
                     return ERR;
                 }
                 if (!sr->ALLOWS_NON_STATIC && !(parser::Modifier::STATIC | parser::Modifier::CONST)) {
-                    parser::error("only static variables allowed", tokens2,
-                                  "only static variables are allowed in a Block of type "s + sr->getName(), 25);
+                    parser::error("only static variables allowed",
+                                  tokens2,
+                                  "only static variables are allowed in a Block of type "s + sr->getName(),
+                                  25);
                 }
                 if (m & parser::Modifier::STATIC) {
-                    parser::error("static variable requires initial value", tokens2,
-                                  "a static variable requires a default value.", 25);
+                    parser::error("static variable requires initial value",
+                                  tokens2,
+                                  "a static variable requires a default value.",
+                                  25);
                 }
 
-                symbol::Variable* v     = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);
-                v->isConst              = m & parser::Modifier::CONST;
-                v->isMutable            = m & parser::Modifier::MUTABLE;
-                v->isStatic             = m & parser::Modifier::STATIC;
+                symbol::Variable* v = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);
+                v->isConst          = m & parser::Modifier::CONST;
+                v->isMutable        = m & parser::Modifier::MUTABLE;
+                v->isStatic         = m & parser::Modifier::STATIC;
                 sr->add(name, v);
-                if (parser::isAtomic(type->getCstType())){
-                    v->isFree = true;
-                }
+                if (parser::isAtomic(type->getCstType())) { v->isFree = true; }
                 return sptr<AST>(new VarDeclAST(name, type, v));
             }
         }
@@ -128,24 +136,26 @@ sptr<AST> VarDeclAST::parse(PARSER_FN_PARAM) {
     return nullptr;
 }
 
-String VarDeclAST::emitLL(int*, String) const { return v->getLLLoc() + " = alloca " + type->getLLType() + "\n"; }
+String VarDeclAST::emitLL(int*, String) const {
+    return v->getLLLoc() + " = alloca " + type->getLLType() + "\n";
+}
 
-VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v,
-                         lexer::TokenStream tokens) {
+VarInitlAST::VarInitlAST(String name, sptr<AST> type, sptr<AST> expr, symbol::Variable* v, lexer::TokenStream tokens) {
     this->name       = name;
     this->type       = type;
     this->expression = expr;
     this->v          = v;
     this->tokens     = tokens;
 }
+
 String VarInitlAST::_str() const {
-    return "<DECLARE "s + name + " : " + type->getCstType() + " = " + str(expression.get()) + (v->isConst? " CONST"s : ""s) + (v->isMutable? " MUT"s : ""s) + (v->isStatic? " STATIC"s : ""s) +  ">";
+    return "<DECLARE "s + name + " : " + type->getCstType() + " = " + str(expression.get()) +
+           (v->isConst ? " CONST"s : ""s) + (v->isMutable ? " MUT"s : ""s) + (v->isStatic ? " STATIC"s : ""s) + ">";
 }
 
 sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mVarInitlAST::parse\e[0m");
-    if (tokens.size() < 5)
-        return nullptr;
+    if (tokens.size() < 5) { return nullptr; }
     if (tokens[tokens.size() - 1].type == lexer::Token::Type::END_CMD) {
         String           name    = "";
         auto             tokens2 = tokens;
@@ -155,15 +165,19 @@ sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
             name           = tokens[split - 1].value;
             sptr<AST> type = Type::parse(tokens.slice(0, 1, split - 1), local, sr);
             if (type == nullptr) {
-                 parser::error("Expected type", {tokens[0], tokens[split-1]}, "Expected a type before the identifier",0);
+                parser::error("Expected type",
+                              {tokens[0], tokens[split - 1]},
+                              "Expected a type before the identifier",
+                              0);
                 // 25);
                 return nullptr;
             }
-            sptr<AST> expr =
-                math::parse(tokens.slice(split + 1, 1, tokens.size() - 1), local, sr, type->getCstType());
+            sptr<AST> expr = math::parse(tokens.slice(split + 1, 1, tokens.size() - 1), local, sr, type->getCstType());
             if (expr == nullptr) {
-                parser::error("Expected expression", {tokens[split + 1], tokens[tokens.size() - 1]},
-                              "Expected an expression", 25);
+                parser::error("Expected expression",
+                              {tokens[split + 1], tokens[tokens.size() - 1]},
+                              "Expected an expression",
+                              25);
                 return share<AST>(new AST);
             }
             // if (!parser::isAtomic(type->getCstType()) ){
@@ -171,13 +185,16 @@ sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
             //     in this scope", 19); return new AST;
             // }
             if ((*sr)[name].size() > 0) {
-                parser::error("Variable already defined", {tokens[tokens.size() - 2]},
-                              "A variable of this name is already defined in this scope", 25);
+                parser::error("Variable already defined",
+                              {tokens[tokens.size() - 2]},
+                              "A variable of this name is already defined in this scope",
+                              25);
                 parser::note((*sr)[name][0]->tokens, "defined here:", 0);
                 return share<AST>(new AST);
             }
             if (parser::isAtomic(name)) {
-                parser::error("Unsupported name", {tokens[tokens.size() - 2]},
+                parser::error("Unsupported name",
+                              {tokens[tokens.size() - 2]},
                               String("The name ") + name +
                                   " refers to a scope or type and cannot be used as a variable name",
                               25);
@@ -192,47 +209,53 @@ sptr<AST> VarInitlAST::parse(PARSER_FN_PARAM) {
             if (m & parser::Modifier::CONST) {
                 if (m & parser::Modifier::MUTABLE) {
                     parser::error(
-                        "Variable declared as constant and mutable", {tokens[split - 1]},
+                        "Variable declared as constant and mutable",
+                        {tokens[split - 1]},
                         "This variable was declared as 'const' (unchangeable) and 'mut' (changeable) at the same time.",
                         0);
                     return share<AST>(new AST);
                 }
                 if (m & parser::Modifier::STATIC) {
-                    parser::warn(
-                        "Variable declared as constant and static", {tokens[split - 1]},
-                        "declaring a constant static is ambigous",
-                        0);
+                    parser::warn("Variable declared as constant and static",
+                                 {tokens[split - 1]},
+                                 "declaring a constant static is ambigous",
+                                 0);
                 }
             }
             expr->forceType(type->getCstType());
-            auto v     = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);
+            auto v = new symbol::Variable(name, type->getCstType(), tokens2.tokens, sr);
 
             if (m & parser::Modifier::CONST) {
                 if (!expr->is_const) {
                     parser::error(
-                        "Non-constant value in constant variable", expr->getTokens(),
+                        "Non-constant value in constant variable",
+                        expr->getTokens(),
                         "you are trying to assign a non-constant value to a constant variable. This is not "
                         "supported.\nRemove the 'const' keyword to get an immutable variable which allows that.",
                         0);
-                    if (!optimizer::do_constant_folding) parser::note(expr->getTokens(), "This could be a direct result of disabling --opt:constant-folding", 0);
+                    if (!optimizer::do_constant_folding) {
+                        parser::note(expr->getTokens(),
+                                     "This could be a direct result of disabling --opt:constant-folding",
+                                     0);
+                    }
                     delete v;
-                    return share<AST>(new AST);
+                    return ERR;
                 }
                 v->const_value = expr->value;
             }
             if (!sr->ALLOWS_NON_STATIC && !(m & (parser::Modifier::STATIC | parser::Modifier::CONST))) {
-                parser::error("only static variables allowed", {tokens[split - 1]},
-                                "only static variables are allowed in a Block of type "s + sr->getName(), 25);
+                parser::error("only static variables allowed",
+                              {tokens[split - 1]},
+                              "only static variables are allowed in a Block of type "s + sr->getName(),
+                              25);
             }
 
-            v->isConst = m & parser::Modifier::CONST;
+            v->isConst   = m & parser::Modifier::CONST;
             v->isMutable = m & parser::Modifier::MUTABLE;
             sr->add(name, v);
-            if (parser::isAtomic(type->getCstType())){
-                v->isFree = true;
-            }
+            if (parser::isAtomic(type->getCstType())) { v->isFree = true; }
             v->used = symbol::Variable::PROVIDED;
-            
+
             return share<AST>(new VarInitlAST(name, type, expr, v, tokens));
         }
     }
@@ -247,13 +270,11 @@ String VarInitlAST::emitLL(int* locc, String) const {
 }
 
 VarAccesAST::VarAccesAST(String name, symbol::Variable* sr, lexer::TokenStream tokens) {
-    this->name   = name;
-    this->var    = sr;
-    this->tokens = tokens;
+    this->name     = name;
+    this->var      = sr;
+    this->tokens   = tokens;
     this->is_const = var->isConst;
-    if (is_const) {
-        value = var->const_value;
-    }
+    if (is_const) { value = var->const_value; }
 }
 
 String VarAccesAST::_str() const {
@@ -262,33 +283,39 @@ String VarAccesAST::_str() const {
 
 sptr<AST> VarAccesAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mVarAccesAST::parse\e[0m");
-    if (tokens.size() == 0)
-        return nullptr;
+    if (tokens.size() == 0) { return nullptr; }
     String name = parse_name(tokens);
     DEBUG(5, "\tname: "s + name)
-    if (name == "")
-        return nullptr;
-    if (name == "null")
-        return share<AST>(new AST);
+    if (name == "") { return nullptr; }
+    if (name == "null") { return share<AST>(new AST); }
     if ((*sr)[name].size() == 0) {
         parser::error("Unknown variable", tokens, "A variable of this name was not found in this scope", 20);
-        return share<AST>(new AST);
+        return ERR;
     }
 
     symbol::Reference* p = (*sr)[name].at(0);
-    if (p == dynamic_cast<symbol::Variable*>(p)){
+    if (p == dynamic_cast<symbol::Variable*>(p)) {
         symbol::Variable::Status& u = ((symbol::Variable*) p)->used;
-        if (u == symbol::Variable::UNINITIALIZED){
-            parser::error("Variable uninitilialized", tokens, "Variable '\e[1m"s + name + "\e[0m' is uninitilialized at this point.\nMake sure the variable holds a value to resolve.", 0);
+        if (u == symbol::Variable::UNINITIALIZED) {
+            parser::error(
+                "Variable uninitilialized",
+                tokens,
+                "Variable '\e[1m"s + name +
+                    "\e[0m' is uninitilialized at this point.\nMake sure the variable holds a value to resolve.",
+                0);
             parser::note(p->tokens, "declared here", 0);
             return share<AST>(new AST);
-        }
-        else if (u == symbol::Variable::CONSUMED && !((symbol::Variable*) p)->isFree) {
-            parser::error("Type linearity violated", tokens, "Variable '\e[1m"s + name + "\e[0m' is consumed at this point.\nMake sure the variable holds a value to resolve.", 0, "");
-            parser::note(p->last, "last consume here", 0);
+        } else if (u == symbol::Variable::CONSUMED && !((symbol::Variable*) p)->isFree) {
+            parser::error("Type linearity violated",
+                          tokens,
+                          "Variable '\e[1m"s + name +
+                              "\e[0m' is consumed at this point.\nMake sure the variable holds a value to resolve.",
+                          0,
+                          "");
+            parser::note(p->last, "last consumed here", 0);
             return share<AST>(new AST);
         }
-        u = symbol::Variable::CONSUMED;
+        u       = symbol::Variable::CONSUMED;
         p->last = tokens.tokens;
     }
     return share<AST>(new VarAccesAST(name, (symbol::Variable*) p, tokens));
@@ -296,8 +323,10 @@ sptr<AST> VarAccesAST::parse(PARSER_FN_PARAM) {
 
 void VarAccesAST::forceType(String type) {
     if (var->getCstType() != type) {
-        parser::error("Type mismatch", tokens,
-                      String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(), 17,
+        parser::error("Type mismatch",
+                      tokens,
+                      String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(),
+                      17,
                       "Caused by");
     }
 }
@@ -322,16 +351,14 @@ String VarSetAST::_str() const {
 
 sptr<AST> VarSetAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mVarSetAST::parse\e[0m");
-    if (tokens.size() == 0)
-        return nullptr;
-    String name  = "";
+    if (tokens.size() == 0) { return nullptr; }
+    String                    name  = "";
     lexer::TokenStream::Match split = tokens.rsplitStack({lexer::Token::Type::SET});
-    if (split.found() && (uint64)split == 0) {
+    if (split.found() && (uint64) split == 0) {
         parser::error("Expected Expression", {tokens[tokens.size() - 1]}, "Expected an expression after '='", 31);
         return share<AST>(new AST);
     }
-    if (!split.found())
-        return nullptr;
+    if (!split.found()) { return nullptr; }
     auto varname = split.before();
     name         = parse_name(varname);
     if (name == "") {
@@ -352,31 +379,40 @@ sptr<AST> VarSetAST::parse(PARSER_FN_PARAM) {
 
     expr->forceType((*sr)[name][0]->getCstType());
     symbol::Reference* p = (*sr)[name].at(0);
-    if (p == dynamic_cast<symbol::Variable*>(p) && ((symbol::Variable*)p)->isConst) {
-        parser::error("Trying to set constant", tokens, "You are trying to set a variable which has a constant value.",
+    if (p == dynamic_cast<symbol::Variable*>(p) && ((symbol::Variable*) p)->isConst) {
+        parser::error("Trying to set constant",
+                      tokens,
+                      "You are trying to set a variable which has a constant value.",
                       17);
         parser::note(p->tokens, "defined here:", 0);
         return share<AST>(new AST);
     }
-    if (!(p == dynamic_cast<symbol::Variable*>(p) && ((symbol::Variable*)p)->isMutable)) {
-        parser::error("Trying to set immutable", tokens, "You are trying to set a variable which was declared as immutable.",
+    if (!(p == dynamic_cast<symbol::Variable*>(p) && ((symbol::Variable*) p)->isMutable)) {
+        parser::error("Trying to set immutable",
+                      tokens,
+                      "You are trying to set a variable which was declared as immutable.",
                       18);
         parser::note(p->tokens, "defined here:", 0);
         return share<AST>(new AST);
     }
-    if (p == dynamic_cast<symbol::Variable*>(p)){
+    if (p == dynamic_cast<symbol::Variable*>(p)) {
         symbol::Variable::Status& u = ((symbol::Variable*) p)->used;
         if (u == symbol::Variable::PROVIDED) {
             fsignal<void, String, lexer::TokenStream, String, uint32, String> warn_error = parser::error;
-            if (((symbol::Variable*) p)->isFree){
-                warn_error = parser::warn;
-            }
+            if (((symbol::Variable*) p)->isFree) { warn_error = parser::warn; }
 
-            warn_error("Type linearity violated", tokens, "Variable '\e[1m"s + name + "\e[0m' was never consumed.\nMake sure the variable is consumed before it is provided.", 0, "");
+            warn_error("Type linearity violated",
+                       tokens,
+                       "Variable '\e[1m"s + name +
+                           "\e[0m' was never consumed.\nMake sure the variable is consumed before it is provided.",
+                       0,
+                       "");
             parser::note(p->last, "last provided here", 0);
-            if (warn_error == (fsignal<void, String, lexer::TokenStream, String, uint32, String>)parser::error) return share<AST>(new AST);
+            if (warn_error == (fsignal<void, String, lexer::TokenStream, String, uint32, String>) parser::error) {
+                return share<AST>(new AST);
+            }
         }
-        u = symbol::Variable::PROVIDED;
+        u       = symbol::Variable::PROVIDED;
         p->last = tokens.tokens;
     }
     return share<AST>(new VarSetAST(name, (symbol::Variable*) p, expr, tokens));
@@ -384,8 +420,10 @@ sptr<AST> VarSetAST::parse(PARSER_FN_PARAM) {
 
 void VarSetAST::forceType(String type) {
     if (var->getCstType() != type) {
-        parser::error("Type mismatch", tokens,
-                      String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(), 17,
+        parser::error("Type mismatch",
+                      tokens,
+                      String("expected a \e[1m") + type + "\e[0m, got a variable of type " + var->getCstType(),
+                      17,
                       "Caused by");
     }
 }
@@ -395,10 +433,52 @@ String VarSetAST::emitLL(int* locc, String inp) const {
                parser::LLType(var->getCstType()) + "* " + var->getLLLoc() + (as_optional ? ", i1 true }"s : ""s) +
                ", align 8\n";
     String l = expr->emitLL(locc, s);
-    if (instanceOf(expr, LiteralAST))
+    if ( instanceOf(expr, LiteralAST))
         inp = rinsert(String("%") + std::to_string(*locc), inp);
     else
         inp = expr->emitLL(locc, inp);
 
     return l + inp;
+}
+
+sptr<AST> DeleteAST::parse(PARSER_FN_PARAM){
+    if (tokens.size() < 2) return nullptr;
+    if (tokens[0].type == lexer::Token::DELETE){
+        if (tokens[-1].type != lexer::Token::END_CMD){
+            parser::error("';' expected", {tokens[-1]}, "expected a ';' at the end of this statement",0);
+            return ERR;
+        }
+        std::vector<symbol::Variable*> vars = {};
+        lexer::TokenStream tokens2 = tokens.slice(1, 1, -1);
+        lexer::TokenStream buffer = lexer::TokenStream({});
+        while (!tokens2.empty()){
+            lexer::TokenStream::Match m = tokens2.rsplitStack({lexer::Token::COMMA});
+            if (m.found()){
+                buffer = m.before();
+                tokens2 = m.after();
+            } else {
+                buffer = tokens2;
+                tokens2 = lexer::TokenStream({});
+            }
+            if (buffer.empty()) continue;
+            
+            sptr<AST> var = VarAccesAST::parse(buffer, local, sr);
+            sptr<VarAccesAST> vaast;
+            if (var != nullptr && instanceOf(var, VarAccesAST)){
+                vaast = cast2(var, VarAccesAST); 
+            }
+            if (var == nullptr){
+                parser::error("Expected var name", buffer, "Expected a valid variable name",0);
+                continue;
+            }
+            else if (instanceOf(var, VarAccesAST) && vaast->var->isFree){
+                parser::error("Trying to delete free variable", buffer, "Variables of atomics cannot be deleted",0);
+                continue;
+            } else if (instanceOf(var, VarAccesAST)) {
+                vars.push_back(vaast->var);
+            }
+        }
+        return share<AST>(new DeleteAST(vars, tokens));
+    }
+    return nullptr;
 }

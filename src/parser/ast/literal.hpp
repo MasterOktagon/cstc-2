@@ -10,6 +10,7 @@
 #include "ast.hpp"
 
 #include <string>
+#include <vector>
 
 extern AST* parse_neg(std::vector<lexer::Token>, int local, symbol::Namespace* sr, String expected_type = "@unknown");
 
@@ -189,6 +190,69 @@ class NullLiteralAST : public LiteralAST {
 
         // virtual String emitLL(int*, String) const;
         virtual String emitCST() const { return "null"; };
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a null literal
+         *
+         * @return null literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+
+class EmptyLiteralAST : public LiteralAST {
+    protected:
+        String _str() const { return "< [] >"; }
+
+        CstType type = "@unknown[]";
+        String const_len = "0";
+
+    public:
+        EmptyLiteralAST(lexer::TokenStream tokens){this->tokens = tokens; is_const = true;}
+
+        virtual ~EmptyLiteralAST() {}
+
+        CstType getCstType() const { return type; }
+
+        LLType getLLType() const { return ""; };
+
+        String getValue() const { return "[]"; };
+
+        // virtual String emitLL(int*, String) const;
+        virtual String emitCST() const { return "[]"; };
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a null literal
+         *
+         * @return null literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
+
+class ArrayLiteralAST : public LiteralAST {
+    protected:
+        String _str() const { return "<Array ("s + type + ") [" + "] >"; }
+
+        CstType type = "@unknown[]";
+        std::vector<sptr<AST>> contents = {};
+
+    public:
+        String const_len = "0";
+        ArrayLiteralAST(lexer::TokenStream tokens, std::vector<sptr<AST>> contents){this->tokens = tokens; this->contents=contents;}
+
+        virtual ~ArrayLiteralAST() {}
+
+        CstType getCstType() const { return type; }
+
+        LLType getLLType() const { return ""; };
+
+        String getValue() const { return "[]"; };
+
+        // virtual String emitLL(int*, String) const;
+        virtual String emitCST() const { return "[]"; };
 
         virtual void forceType(String type);
 

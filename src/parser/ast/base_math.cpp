@@ -1090,11 +1090,11 @@ sptr<AST> math::parse(lexer::TokenStream tokens, int local, symbol::Namespace* s
     DEBUGT(2, "math::parse", &tokens);
     return parser::parseOneOf(tokens,
                               {parse_pt, IntLiteralAST::parse, FloatLiteralAST::parse, BoolLiteralAST::parse,
-                               CharLiteralAST::parse, StringLiteralAST::parse, NullLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
+                               CharLiteralAST::parse, StringLiteralAST::parse, EmptyLiteralAST::parse, NullLiteralAST::parse, ArrayLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
 
                                NegAST::parse, LandAST::parse, LorAST::parse, XorAST::parse, AddAST::parse, MulAST::parse, PowAST::parse, NotAST::parse, NegAST::parse,
                               AndAST::parse, OrAST::parse,
 
-                               NoWrapAST::parse, CastAST::parse, CheckAST::parse, FuncCallAST::parse},
+                               NoWrapAST::parse, CastAST::parse, CheckAST::parse,ArrayLengthAST::parse, FuncCallAST::parse},
                               local, sr, expected_type);
 }

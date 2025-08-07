@@ -66,5 +66,27 @@ class OptionalTypeAST : public TypeAST {
     static sptr<AST> parse(PARSER_FN);
 };
 
+class ArrayTypeAST : public TypeAST {
+    sptr<TypeAST> type;
+
+    public:
+    ArrayTypeAST(sptr<TypeAST> type);
+    virtual bool isConst(){return false;} // do constant folding or not
+    virtual ~ArrayTypeAST(){}
+    virtual String emitLL(int*, String) const {return "";}
+    virtual String emitCST() const {return type->emitCST() + "[]";}
+    
+    virtual CstType getCstType() const {return type->getCstType() + "[]";}
+    virtual LLType getLLType() const {return "...";}
+    virtual void forceType(String){}
+
+    /**
+     * @brief parse a simple type name
+     *
+     * @return Type AST or nullptr if none was found
+     */
+    static sptr<AST> parse(PARSER_FN);
+};
+
 
 

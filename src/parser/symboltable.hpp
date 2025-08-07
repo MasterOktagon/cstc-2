@@ -191,7 +191,7 @@ namespace symbol {
             String getLLName() { return getLLType() + (is_method ? "mthd."s : "fn."s) + name; }
 
             CstType getCstType();
-
+            CstType getReturnType() const { return type; }
             virtual ~Function() { Namespace::~Namespace(); };
 
             virtual size sizeBytes() { return 8; }

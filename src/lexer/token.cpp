@@ -170,8 +170,8 @@ lexer::TokenStream::Match lexer::TokenStream::splitStack(std::initializer_list<T
     std::stack<lexer::Token> s = {};
     const std::vector<Token>& t = tokens;
 
-    uint64 i;
-    for(i=t.size()-1-start_idx; i>0 ; i--){
+    int64 i;
+    for(i=t.size()-1-start_idx; i>=0 ; i--){
         if (t[i].type == lexer::Token::Type::CLOSE || t[i].type == lexer::Token::Type::INDEX_CLOSE || t[i].type == lexer::Token::Type::BLOCK_CLOSE) {
             if (s.size() == 0 && std::find(delimiter.begin(), delimiter.end(), t[i].type) != delimiter.end())
                 return TokenStream::Match(i, true, this);
@@ -179,7 +179,7 @@ lexer::TokenStream::Match lexer::TokenStream::splitStack(std::initializer_list<T
         }
 
         else if (t[i].type == lexer::Token::Type::OPEN){
-            if(s.size() == 0) lexer::error("Unclosed PARANTHESIS", {t[i]}, "This PARANTHESIS was not closed" , 46);
+            if(s.size() == 0) lexer::error("Unclosed OPEN", {t[i]}, "This OPEN was not closed" , 46);
             if(s.top().type != lexer::Token::Type::CLOSE) lexer::error("Unopened "s + getTokenName(s.top().type), {s.top()}, "This " + getTokenName(s.top().type) + " was not opened" , 47);
             s.pop();
         }
