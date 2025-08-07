@@ -78,9 +78,14 @@ sptr<AST> IntLiteralAST::parse(PARSER_FN_PARAM) {
 void IntLiteralAST::forceType(String type) {
     std::regex r("u?int(8|16|32|64|128)");
     bool       expected_int = std::regex_match(type, r);
-    if (expected_int) {
+    if (expected_int || type == "usize" || type == "ssize") {
         bool sig  = type[0] != 'u';
-        int  bits = std::stoi(type.substr(3 + (!sig), type.size()));
+        int  bits;
+        if (type == "usize" || type == "ssize") {
+            bits=64;
+        } else {
+            bits = std::stoi(type.substr(3 + (!sig), type.size()));
+        }
 
         if (value[0] == '-' && !sig) {
             parser::error("Sign mismatch",
@@ -345,6 +350,37 @@ void EmptyLiteralAST::forceType(CstType type) {
     }
 }
 
+sptr<AST> ArrayFieldMultiplierAST::parse(PARSER_FN_PARAM) {
+    DEBUG(4, "Trying \e[1mArrayFieldMultiplierAST::parse\e[0m");
+    lexer::TokenStream::Match m = tokens.rsplitStack({lexer::Token::X});
+    if (m.found()) {
+        DEBUG(3, "ArrayFieldMultiplierAST::parse");
+        sptr<AST> content = math::parse(m.before(), local, sr);
+        if (content == nullptr) {
+            parser::error("Expected expression", m.after(), "Expected a valid expression before 'x'", 0);
+            return ERR;
+        }
+        sptr<AST> amount  = math::parse(m.after(), local, sr);
+        if (amount == nullptr) {
+            parser::error("Expected amount", m.after(), "Expected an amount after 'x'", 0);
+            return ERR;
+        }
+        amount->forceType("usize");
+
+        DEBUG(5, "\tDone!");
+        return share<AST>(new ArrayFieldMultiplierAST(tokens,content, amount));
+    }
+    return nullptr;
+}
+
+void ArrayFieldMultiplierAST::forceType(CstType type) {
+    content->forceType(type);
+    is_const = content->is_const && amount->is_const;
+    if (is_const) {
+        value = std::stoll(amount->value);
+    }
+}
+
 sptr<AST> ArrayLiteralAST::parse(PARSER_FN_PARAM) {
     DEBUG(4, "Trying \e[1mArrayLiteralAST::parse\e[0m");
     if (tokens.size() < 2) { return nullptr; }
@@ -366,7 +402,7 @@ sptr<AST> ArrayLiteralAST::parse(PARSER_FN_PARAM) {
             }
             if (buffer.empty()) { continue; }
 
-            sptr<AST> expr = math::parse(buffer, local + 1, sr);
+            sptr<AST> expr = parser::parseOneOf(buffer,{ArrayFieldMultiplierAST::parse, math::parse}, local + 1, sr, "");
             if (expr == nullptr) {
                 parser::error("Expression expected",buffer,"expected a valid expression",0);
                 continue;

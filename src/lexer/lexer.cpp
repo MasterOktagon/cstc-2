@@ -187,8 +187,9 @@ lexer::Token::Type lexer::matchType(String c) {
         type = lexer::Token::Type::NOWRAP;
     } else if (c == "null") {
         type = lexer::Token::Type::NULV;
+    } else if (c == "x") {
+        type = lexer::Token::Type::X;
     }
-    
 
     return type;
 }

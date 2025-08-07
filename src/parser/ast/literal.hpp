@@ -8,6 +8,7 @@
 
 #include "../symboltable.hpp"
 #include "ast.hpp"
+#include "flow.hpp"
 
 #include <string>
 #include <vector>
@@ -206,7 +207,7 @@ class EmptyLiteralAST : public LiteralAST {
         String _str() const { return "< [] >"; }
 
         CstType type = "@unknown[]";
-        String const_len = "0";
+        uint64 const_len = 0;
 
     public:
         EmptyLiteralAST(lexer::TokenStream tokens){this->tokens = tokens; is_const = true;}
@@ -232,6 +233,41 @@ class EmptyLiteralAST : public LiteralAST {
         static sptr<AST> parse(PARSER_FN);
 };
 
+class ArrayFieldMultiplierAST : public AST {
+        protected:
+        String _str() const { return "<" + str(content.get()) + " x " + str(amount.get()) + ">"; }
+
+        CstType type = "@unknown";
+        sptr<AST> content;
+        sptr<AST> amount;
+
+        public:
+        ArrayFieldMultiplierAST(lexer::TokenStream tokens, sptr<AST> content, sptr<AST> amount) {
+            this->tokens = tokens;
+            this->content = content;
+            this->amount = amount;
+        }
+
+        virtual ~ArrayFieldMultiplierAST() {}
+
+        CstType getCstType() const { return content->getCstType(); }
+
+        LLType getLLType() const { return ""; };
+
+        String getValue() const { return ""; };
+
+        // virtual String emitLL(int*, String) const;
+        virtual String emitCST() const { return content->emitCST() + " x " + amount->emitCST(); };
+
+        virtual void forceType(String type);
+
+        /**
+         * @brief parse a null literal
+         *
+         * @return null literal AST or nullptr is not found
+         */
+        static sptr<AST> parse(PARSER_FN);
+};
 class ArrayLiteralAST : public LiteralAST {
     protected:
         String _str() const { return "<Array ("s + type + ") [" + "] >"; }
@@ -240,7 +276,7 @@ class ArrayLiteralAST : public LiteralAST {
         std::vector<sptr<AST>> contents = {};
 
     public:
-        String const_len = "0";
+        uint64 const_len = 0;
         ArrayLiteralAST(lexer::TokenStream tokens, std::vector<sptr<AST>> contents){this->tokens = tokens; this->contents=contents;}
 
         virtual ~ArrayLiteralAST() {}

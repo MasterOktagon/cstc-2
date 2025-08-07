@@ -131,7 +131,8 @@ namespace lexer {
                 NEW       ,
                 FINALLY   ,
                 DELETE    ,
-                NOWRAP
+                NOWRAP    ,
+                X         
                 // clang-format on
             };
 
