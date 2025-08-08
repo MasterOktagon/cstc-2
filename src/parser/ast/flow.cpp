@@ -1,7 +1,6 @@
 #include "flow.hpp"
 
 #include "../../debug/debug.hpp"
-#include "../../lexer/lexer.hpp"
 #include "../errors.hpp"
 #include "../parser.hpp"
 #include "../symboltable.hpp"

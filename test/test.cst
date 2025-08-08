@@ -1,7 +1,9 @@
 
 
 void main(int8 l) {
-    uint8 a = 5;
+    mut uint8 a = 5;
+    uint8[] b = [1,2, 3 x 3];
+    a = [1,2][0];
 }
 
 

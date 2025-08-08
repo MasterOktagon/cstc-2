@@ -24,9 +24,11 @@ int32 main(int32 argc, const char** argv){
 /**
  * @brief main function
  */
-    // setup segfault catching for easier debugging
-    segvcatch::init_fpe (nlambda () {throw FPEException(); });
-    segvcatch::init_segv(nlambda () {throw SegFException();});
+    #ifdef SEGVCATCH
+        // setup segfault catching for easier debugging
+        segvcatch::init_fpe (nlambda () {throw FPEException(); });
+        segvcatch::init_segv(nlambda () {throw SegFException();});
+    #endif
 
     // setup argument parsing
     argparse::ArgumentParser argparser("cstc"s, "c0.01"s, argparse::default_arguments::help);

@@ -1,9 +1,10 @@
 #pragma once
-#include <utility>
 #define share std::shared_ptr
 #define unify std::unique_ptr
 
-#include "../lib/segvcatch/lib/segvcatch.h"
+#ifdef SEGVCATCH
+    #include "../lib/segvcatch/lib/segvcatch.h"
+#endif
 
 #include <cstdint>
 #include <memory>

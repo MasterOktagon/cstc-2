@@ -8,9 +8,9 @@
 
 #include "../../lexer/token.hpp"
 #include "../../snippets.h"
+#include "../errors.hpp"
 #include "../symboltable.hpp"
 #include "ast.hpp"
-#include "../errors.hpp"
 
 #include <map>
 #include <tuple>
@@ -328,6 +328,7 @@ class NeqAST : public DoubleOperandAST {
          */
         static sptr<AST> parse(PARSER_FN);
 };
+
 /**
  * @class that represents a '>=' operation
  */
@@ -576,4 +577,37 @@ class AddrOfAST : public ExpressionAST {
         virtual String emitLL(int*, String) const;
 
         String emitCST() const;
+};
+
+/**
+ * @class
+ */
+class ArrayIndexAST : public ExpressionAST {
+        sptr<AST> of;
+        sptr<AST> idx;
+
+    public:
+        ArrayIndexAST(lexer::TokenStream tokens, sptr<AST> of, sptr<AST> idx) {
+            this->of     = of;
+            this->idx    = idx;
+            this->tokens = tokens;
+        }
+
+        virtual ~ArrayIndexAST(){};
+        virtual uint64 nodeSize() const { return of->nodeSize() + idx->nodeSize() + 1; } // how many nodes to to do
+
+        String emitCST() const {
+            return of->emitCST() + "[" + idx->emitCST() + "]";
+        }
+
+        CstType getCstType() const { return of->getCstType().substr(of->getCstType().size()-2); }
+
+        void forceType(CstType type);
+
+        /**
+         * @brief parse a nowrap call
+         *
+         * @return AST or nullptr if no match
+         */
+        static sptr<AST> parse(PARSER_FN);
 };

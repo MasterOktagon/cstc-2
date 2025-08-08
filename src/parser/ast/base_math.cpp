@@ -1166,13 +1166,47 @@ void NoWrapAST::forceType(CstType type) {
     of->forceType(type);
 }
 
+sptr<AST> ArrayIndexAST::parse(PARSER_FN_PARAM){
+    DEBUG(4, "Trying \e[1mArrayIndexAST::parse\e[0m");
+    //DEBUG(4, "Trying \e[1mArrayIndexAST::parse\e[0m");
+    if (tokens.size() < 1) return nullptr;
+    DEBUG(4, "Trying \e[1mArrayIndexAST::parse\e[0m");
+    lexer::TokenStream::Match m = tokens.splitStack({lexer::Token::INDEX_OPEN});
+    DEBUG(4, "Trying \e[1mArrayIndexAST::parse\e[0m");
+    if (m.found() && (uint64)m != 0){
+        DEBUG(4, "Trying \e[1mArrayIndexAST::parse\e[0m");
+        if (tokens[-1].type == lexer::Token::INDEX_CLOSE){
+            lexer::TokenStream tok2 = m.after().slice(0, 1, -1);
+            DEBUGT(3, "\ttok: ", &tok2);
+            sptr<AST> idx = math::parse(tok2, local+1, sr);
+            if (idx == nullptr){
+                parser::error("Expected expression", tok2, "expected a valid expression", 0);
+                return ERR;
+            }
+            idx->forceType("usize");
 
+            lexer::TokenStream tok = m.before();
+            DEBUGT(3, "\ttok: ", &tok);
+            sptr<AST> of = math::parse(tok, local+1, sr);
+            if (idx == nullptr){
+                parser::error("Expected expression", tok, "expected a valid expression", 0);
+                return ERR;
+            }
+            return share<AST>(new ArrayIndexAST(tokens, of, idx));
+        }
+    }
+    return nullptr;
+}
+
+void ArrayIndexAST::forceType(CstType type){
+    of->forceType(type + "[]");
+}
 
 sptr<AST> math::parse(lexer::TokenStream tokens, int local, symbol::Namespace* sr, String expected_type) {
     DEBUGT(2, "math::parse", &tokens);
     return parser::parseOneOf(tokens,
                               {parse_pt, IntLiteralAST::parse, FloatLiteralAST::parse, BoolLiteralAST::parse,
-                               CharLiteralAST::parse, StringLiteralAST::parse, EmptyLiteralAST::parse, NullLiteralAST::parse, ArrayLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
+                               CharLiteralAST::parse, StringLiteralAST::parse, EmptyLiteralAST::parse, NullLiteralAST::parse,ArrayIndexAST::parse, ArrayLiteralAST::parse, VarAccesAST::parse, VarSetAST::parse,
 
                                NegAST::parse, LandAST::parse, LorAST::parse, EqAST::parse, NeqAST::parse, GeqAST::parse,LeqAST::parse, GtAST::parse, LtAST::parse, AddAST::parse, MulAST::parse, PowAST::parse, NotAST::parse, NegAST::parse,
                               AndAST::parse, OrAST::parse, XorAST::parse,
