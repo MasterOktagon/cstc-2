@@ -101,7 +101,7 @@ class ReturnAST : public AST {
 
         virtual bool isConst() { return false; }
 
-        virtual String emitCST() const { return "return "s + expr->emitCST() + ";"; };
+        virtual String emitCST() const { return "return"s + (expr != nullptr ? " "s + expr->emitCST() : ""s) + ";"; };
 
         virtual CstType getCstType() const { return "void"; }
 

@@ -1,9 +1,11 @@
 
 
-void main(int8 l) {
-    mut uint8 a = 5;
+void main() {
+    mut uint8 a;
     uint8[] b = [1,2, 3 x 3];
-    a = [1,2][0];
+    a = b[0];
+
+    delete b;
 }
 
 

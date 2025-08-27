@@ -288,7 +288,16 @@ class ArrayLiteralAST : public LiteralAST {
         String getValue() const { return "[]"; };
 
         // virtual String emitLL(int*, String) const;
-        virtual String emitCST() const { return "[]"; };
+        virtual String emitCST() const {
+            String s = "[";
+            bool   has_contents = false;
+            for (sptr<AST> c : contents) {
+                has_contents = true;
+                s += c->emitCST() + ",";
+            }
+            if (has_contents) { s += "\b"; }
+            return s + "]";
+        };
 
         virtual void forceType(String type);
 

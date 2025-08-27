@@ -52,6 +52,7 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
     std::vector<sptr<AST>> contents;
     bool has_returned=false;
     sptr<AST> last_return = nullptr;
+    std::vector<sptr<AST>> unreachable = {};
 
     while (tokens.size() > 0) {
         lexer::TokenStream::Match split =
@@ -74,8 +75,7 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
             }
             else {
                 if (has_returned){
-                    parser::error("Unreachable code", expr->getTokens(), "", 0);
-                    parser::note(last_return->getTokens(),"because of this return statement",0);
+                    unreachable.push_back(expr);
                 }
                 if(instanceOf(expr, ReturnAST)){
                     has_returned = true;
@@ -115,6 +115,10 @@ sptr<AST> SubBlockAST::parse(PARSER_FN_PARAM) {
                 }
                 contents.push_back(expr);
             }
+            if(!unreachable.empty()){
+                parser::error("Unreachable code", {unreachable[0]->getTokens()[0], unreachable[unreachable.size()-1]->getTokens()[-1]}, "", 0);
+                parser::note(last_return->getTokens(),"because of this return statement",0);
+            } 
         }
         tokens = split.after();
     }
@@ -206,7 +210,7 @@ sptr<AST> ReturnAST::parse(PARSER_FN_PARAM){
             }
 
             expr->forceType(sr->getReturnType());
-            return share<AST>(new ReturnAST(ERR, tokens));
+            return share<AST>(new ReturnAST(expr, tokens));
         } else {
             parser::error("return not allowed", tokens, "return statements are not allowed in a block of type "s + sr->getName(),0);
             return ERR;
